@@ -401,12 +401,12 @@
     </div>
   </div>
 
-  <!-- Firebase v9 SDK (Modular via CDN) -->
+  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-    // Your official Firebase credentials configuration
     const firebaseConfig = {
       apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
       authDomain: "my-memory-vault-630b3.firebaseapp.com",
@@ -418,9 +418,9 @@
       measurementId: "G-QMBXSZD2EV"
     };
 
-    // Initialize Firebase & Cloud Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app);
     const memoriesRef = collection(db, "memories");
 
     window.vaultItems = [];
@@ -431,7 +431,6 @@
     window.audioElements = {};
     window.editingNoteDocId = null;
 
-    // Real-time listener for Firestore Cloud sync
     onSnapshot(memoriesRef, (snapshot) => {
       window.vaultItems = snapshot.docs.map(doc => ({
         docId: doc.id,
@@ -443,58 +442,74 @@
       document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
     });
 
-    window.handleMultipleImport = function(event) {
+    window.handleMultipleImport = async function(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      Array.from(files).forEach((file) => {
-        let fileCategory = 'text';
+      const totalFiles = files.length;
+      let currentIndex = 0;
 
+      for (const file of Array.from(files)) {
+        currentIndex++;
+        let fileCategory = 'text';
         if (file.type.startsWith('image/')) fileCategory = 'image';
         else if (file.type.startsWith('video/')) fileCategory = 'video';
         else if (file.type.startsWith('audio/')) fileCategory = 'audio';
 
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-          try {
-            await addDoc(memoriesRef, {
-              id: Date.now() + Math.random(),
-              name: file.name,
-              url: e.target.result,
-              type: file.type,
-              category: fileCategory,
-              textContent: '',
-              isPlaying: false,
-              createdAt: new Date().toISOString()
-            });
-          } catch(err) {
-            alert("Upload failed to Cloud: " + err.message);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+        const fileStorageRef = ref(storage, 'uploads/' + Date.now() + '_' + file.name);
+        const uploadTask = uploadBytesResumable(fileStorageRef, file);
 
+        await new Promise((resolve, reject) => {
+          uploadTask.on('state_changed', 
+            (snapshot) => {
+              const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+              document.getElementById('sync-status').innerText = `Uploading [${currentIndex}/${totalFiles}]: ${progress}% ⏳`;
+            }, 
+            (error) => {
+              alert("Upload failed for " + file.name + ": " + error.message);
+              reject(error);
+            }, 
+            async () => {
+              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+
+              await addDoc(memoriesRef, {
+                id: Date.now() + Math.random(),
+                name: file.name,
+                url: downloadUrl,
+                storagePath: uploadTask.snapshot.ref.fullPath,
+                type: file.type,
+                category: fileCategory,
+                textContent: '',
+                isPlaying: false,
+                createdAt: new Date().toISOString()
+              });
+              resolve();
+            }
+          );
+        });
+      }
+
+      document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
       event.target.value = '';
     };
 
     window.saveNote = async function() {
       const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
       const content = document.getElementById('note-content').value;
-      const dataUrl = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(content)));
 
       try {
         if (window.editingNoteDocId) {
           const docRef = doc(db, "memories", window.editingNoteDocId);
           await updateDoc(docRef, {
             name: title + '.txt',
-            textContent: content,
-            url: dataUrl
+            textContent: content
           });
         } else {
           await addDoc(memoriesRef, {
             id: Date.now() + Math.random(),
             name: title + '.txt',
-            url: dataUrl,
+            url: '',
+            storagePath: '',
             type: 'text/plain',
             category: 'text',
             textContent: content,
@@ -504,7 +519,7 @@
         }
         closeNoteModal();
       } catch(err) {
-        alert("Failed to save note to cloud: " + err.message);
+        alert("Failed to save note: " + err.message);
       }
     };
 
@@ -512,6 +527,12 @@
       const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
       for (const item of selectedDocs) {
         if (item.docId) {
+          if (item.storagePath) {
+            try {
+              const fileStorageRef = ref(storage, item.storagePath);
+              await deleteObject(fileStorageRef);
+            } catch(e) {}
+          }
           await deleteDoc(doc(db, "memories", item.docId));
         }
       }
@@ -678,17 +699,7 @@
       if (item.category === 'audio') {
         toggleAudio(item.id);
       } else if (item.category === 'text') {
-        if (item.textContent !== undefined) {
-          openNoteEditor(item);
-        } else {
-          try {
-            const decoded = decodeURIComponent(escape(atob(item.url.split(',')[1])));
-            item.textContent = decoded;
-            openNoteEditor(item);
-          } catch(e) {
-            openModal(`<pre style="text-align:left; white-space:pre-wrap; font-size:13px;">${item.url}</pre>`, item.name, item);
-          }
-        }
+        openNoteEditor(item);
       } else if (item.category === 'image') {
         openModal(`<img src="${item.url}" style="max-width:100%; max-height:60vh;">`, item.name, item);
       } else if (item.category === 'video') {
@@ -700,6 +711,7 @@
       const a = document.createElement('a');
       a.href = item.url;
       a.download = item.name;
+      a.target = "_blank";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
