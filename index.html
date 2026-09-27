@@ -336,7 +336,7 @@
 
   <div class="top-header">
     <div class="logo">RONOCK</div>
-    <div class="status-badge" id="sync-status">Firebase Connected ⚡</div>
+    <div class="status-badge" id="sync-status">Cloud Sync Active ☁️</div>
   </div>
 
   <div class="menu-bar">
@@ -384,7 +384,7 @@
     </div>
   </div>
 
-  <!-- Samsung Notes Editor Modal -->
+  <!-- Note Modal -->
   <div id="note-modal" class="modal" onclick="closeNoteModal()">
     <div class="note-modal-content" onclick="event.stopPropagation()">
       <div class="note-modal-header">
@@ -401,11 +401,9 @@
     </div>
   </div>
 
-  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
@@ -420,7 +418,6 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const storage = getStorage(app);
     const memoriesRef = collection(db, "memories");
 
     window.vaultItems = [];
@@ -442,51 +439,41 @@
       document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
     });
 
+    const fileToBase64 = (file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+
     window.handleMultipleImport = async function(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      const totalFiles = files.length;
-      let currentIndex = 0;
+      document.getElementById('sync-status').innerText = "Processing & Uploading... ⏳";
 
       for (const file of Array.from(files)) {
-        currentIndex++;
         let fileCategory = 'text';
         if (file.type.startsWith('image/')) fileCategory = 'image';
         else if (file.type.startsWith('video/')) fileCategory = 'video';
         else if (file.type.startsWith('audio/')) fileCategory = 'audio';
 
-        const fileStorageRef = ref(storage, 'uploads/' + Date.now() + '_' + file.name);
-        const uploadTask = uploadBytesResumable(fileStorageRef, file);
+        try {
+          const base64Data = await fileToBase64(file);
 
-        await new Promise((resolve, reject) => {
-          uploadTask.on('state_changed', 
-            (snapshot) => {
-              const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-              document.getElementById('sync-status').innerText = `Uploading [${currentIndex}/${totalFiles}]: ${progress}% ⏳`;
-            }, 
-            (error) => {
-              alert("Upload failed for " + file.name + ": " + error.message);
-              reject(error);
-            }, 
-            async () => {
-              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-
-              await addDoc(memoriesRef, {
-                id: Date.now() + Math.random(),
-                name: file.name,
-                url: downloadUrl,
-                storagePath: uploadTask.snapshot.ref.fullPath,
-                type: file.type,
-                category: fileCategory,
-                textContent: '',
-                isPlaying: false,
-                createdAt: new Date().toISOString()
-              });
-              resolve();
-            }
-          );
-        });
+          await addDoc(memoriesRef, {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            url: base64Data,
+            type: file.type,
+            category: fileCategory,
+            textContent: '',
+            isPlaying: false,
+            createdAt: new Date().toISOString()
+          });
+        } catch(err) {
+          alert("File import failed: " + err.message);
+        }
       }
 
       document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
@@ -509,7 +496,6 @@
             id: Date.now() + Math.random(),
             name: title + '.txt',
             url: '',
-            storagePath: '',
             type: 'text/plain',
             category: 'text',
             textContent: content,
@@ -527,12 +513,6 @@
       const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
       for (const item of selectedDocs) {
         if (item.docId) {
-          if (item.storagePath) {
-            try {
-              const fileStorageRef = ref(storage, item.storagePath);
-              await deleteObject(fileStorageRef);
-            } catch(e) {}
-          }
           await deleteDoc(doc(db, "memories", item.docId));
         }
       }
