@@ -36,6 +36,13 @@
       font-weight: bold;
     }
 
+    .status-badge {
+      font-size: 11px;
+      background: #16a085;
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
     .menu-bar {
       background-color: #16a085;
       display: flex;
@@ -88,11 +95,6 @@
       color: white;
       margin-left: 8px;
       display: none;
-    }
-
-    .btn-logout {
-      background-color: #e74c3c;
-      color: white;
     }
 
     .btn-download {
@@ -321,13 +323,20 @@
       color: #333;
       line-height: 1.6;
     }
+
+    .loader {
+      font-size: 14px;
+      color: #7f8c8d;
+      text-align: center;
+      margin-top: 50px;
+    }
   </style>
 </head>
 <body>
 
   <div class="top-header">
     <div class="logo">RONOCK</div>
-    <button class="btn btn-logout">Logout</button>
+    <div class="status-badge" id="sync-status">Firebase Connected ⚡</div>
   </div>
 
   <div class="menu-bar">
@@ -356,7 +365,9 @@
   </div>
 
   <div class="main-container">
-    <div class="grid-layout" id="media-grid"></div>
+    <div class="grid-layout" id="media-grid">
+      <div class="loader">Loading cloud files...</div>
+    </div>
   </div>
 
   <!-- Standard Media Modal -->
@@ -390,30 +401,53 @@
     </div>
   </div>
 
-  <script>
-    let vaultItems = JSON.parse(localStorage.getItem('ronock_vault_items')) || [];
-    let selectedItemIds = [];
-    let currentCategory = 'all';
-    let isSelectionMode = false;
-    let holdTimer = null;
-    let audioElements = {};
-    let editingNoteId = null;
+  <!-- Firebase v9 SDK (Modular via CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    function saveToLocalStorage() {
-      try {
-        localStorage.setItem('ronock_vault_items', JSON.stringify(vaultItems));
-      } catch (e) {
-        alert('Storage limit full! Large files may not persist.');
-      }
-    }
+    // Your official Firebase credentials configuration
+    const firebaseConfig = {
+      apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
+      authDomain: "my-memory-vault-630b3.firebaseapp.com",
+      databaseURL: "https://my-memory-vault-630b3-default-rtdb.firebaseio.com",
+      projectId: "my-memory-vault-630b3",
+      storageBucket: "my-memory-vault-630b3.appspot.com",
+      messagingSenderId: "31545523452",
+      appId: "1:31545523452:web:aadaa50f7a7571c8beeb79",
+      measurementId: "G-QMBXSZD2EV"
+    };
 
-    function handleMultipleImport(event) {
+    // Initialize Firebase & Cloud Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const memoriesRef = collection(db, "memories");
+
+    window.vaultItems = [];
+    window.selectedItemIds = [];
+    window.currentCategory = 'all';
+    window.isSelectionMode = false;
+    window.holdTimer = null;
+    window.audioElements = {};
+    window.editingNoteDocId = null;
+
+    // Real-time listener for Firestore Cloud sync
+    onSnapshot(memoriesRef, (snapshot) => {
+      window.vaultItems = snapshot.docs.map(doc => ({
+        docId: doc.id,
+        ...doc.data()
+      }));
+      document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+      renderGrid();
+    }, (error) => {
+      document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+    });
+
+    window.handleMultipleImport = function(event) {
       const files = event.target.files;
       if (!files || files.length === 0) return;
 
-      const fileList = Array.from(files);
-
-      fileList.forEach((file) => {
+      Array.from(files).forEach((file) => {
         let fileCategory = 'text';
 
         if (file.type.startsWith('image/')) fileCategory = 'image';
@@ -421,28 +455,73 @@
         else if (file.type.startsWith('audio/')) fileCategory = 'audio';
 
         const reader = new FileReader();
-        reader.onload = function(e) {
-          const newItem = {
-            id: Date.now() + Math.random(),
-            name: file.name,
-            url: e.target.result,
-            type: file.type,
-            category: fileCategory,
-            textContent: '',
-            isPlaying: false
-          };
-          vaultItems.push(newItem);
-          saveToLocalStorage();
-          renderGrid();
+        reader.onload = async function(e) {
+          try {
+            await addDoc(memoriesRef, {
+              id: Date.now() + Math.random(),
+              name: file.name,
+              url: e.target.result,
+              type: file.type,
+              category: fileCategory,
+              textContent: '',
+              isPlaying: false,
+              createdAt: new Date().toISOString()
+            });
+          } catch(err) {
+            alert("Upload failed to Cloud: " + err.message);
+          }
         };
         reader.readAsDataURL(file);
       });
 
       event.target.value = '';
-    }
+    };
 
-    function switchCategory(category, element) {
-      currentCategory = category;
+    window.saveNote = async function() {
+      const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
+      const content = document.getElementById('note-content').value;
+      const dataUrl = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(content)));
+
+      try {
+        if (window.editingNoteDocId) {
+          const docRef = doc(db, "memories", window.editingNoteDocId);
+          await updateDoc(docRef, {
+            name: title + '.txt',
+            textContent: content,
+            url: dataUrl
+          });
+        } else {
+          await addDoc(memoriesRef, {
+            id: Date.now() + Math.random(),
+            name: title + '.txt',
+            url: dataUrl,
+            type: 'text/plain',
+            category: 'text',
+            textContent: content,
+            isPlaying: false,
+            createdAt: new Date().toISOString()
+          });
+        }
+        closeNoteModal();
+      } catch(err) {
+        alert("Failed to save note to cloud: " + err.message);
+      }
+    };
+
+    window.deleteSelected = async function() {
+      const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
+      for (const item of selectedDocs) {
+        if (item.docId) {
+          await deleteDoc(doc(db, "memories", item.docId));
+        }
+      }
+      window.selectedItemIds = [];
+      window.isSelectionMode = false;
+      renderGrid();
+    };
+
+    window.switchCategory = function(category, element) {
+      window.currentCategory = category;
       document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
       element.classList.add('active');
 
@@ -454,25 +533,31 @@
       }
 
       renderGrid();
-    }
+    };
 
-    function renderGrid() {
+    window.renderGrid = function() {
       const grid = document.getElementById('media-grid');
       grid.innerHTML = '';
 
-      if (isSelectionMode) {
+      if (window.isSelectionMode) {
         grid.classList.add('selection-mode');
       } else {
         grid.classList.remove('selection-mode');
       }
 
-      const filteredItems = currentCategory === 'all' 
-        ? vaultItems 
-        : vaultItems.filter(item => item.category === currentCategory);
+      const filteredItems = window.currentCategory === 'all' 
+        ? window.vaultItems 
+        : window.vaultItems.filter(item => item.category === window.currentCategory);
+
+      if(filteredItems.length === 0) {
+        grid.innerHTML = `<div class="loader">No items in ${window.currentCategory} category yet.</div>`;
+        updateActionBar();
+        return;
+      }
 
       filteredItems.forEach(item => {
         const card = document.createElement('div');
-        const isSelected = selectedItemIds.includes(item.id);
+        const isSelected = window.selectedItemIds.includes(item.id);
         card.className = `card ${isSelected ? 'selected' : ''}`;
 
         let previewHTML = '';
@@ -494,16 +579,16 @@
         `;
 
         const startHold = () => {
-          holdTimer = setTimeout(() => {
-            if (!isSelectionMode) {
-              isSelectionMode = true;
+          window.holdTimer = setTimeout(() => {
+            if (!window.isSelectionMode) {
+              window.isSelectionMode = true;
               toggleSelectItem(item.id);
             }
           }, 3000);
         };
 
         const clearHold = () => {
-          if (holdTimer) clearTimeout(holdTimer);
+          if (window.holdTimer) clearTimeout(window.holdTimer);
         };
 
         card.addEventListener('touchstart', startHold, { passive: true });
@@ -515,7 +600,7 @@
         card.addEventListener('mouseleave', clearHold);
 
         card.addEventListener('click', () => {
-          if (isSelectionMode) {
+          if (window.isSelectionMode) {
             toggleSelectItem(item.id);
           } else {
             handleSingleTap(item);
@@ -526,91 +611,60 @@
       });
 
       updateActionBar();
-    }
+    };
 
-    function openNoteEditor(noteItem = null) {
+    window.openNoteEditor = function(noteItem = null) {
       if (noteItem) {
-        editingNoteId = noteItem.id;
+        window.editingNoteDocId = noteItem.docId;
         document.getElementById('note-title').value = noteItem.name.replace('.txt', '');
         document.getElementById('note-content').value = noteItem.textContent;
       } else {
-        editingNoteId = null;
+        window.editingNoteDocId = null;
         document.getElementById('note-title').value = '';
         document.getElementById('note-content').value = '';
       }
       document.getElementById('note-modal').style.display = 'flex';
-    }
+    };
 
-    function closeNoteModal() {
+    window.closeNoteModal = function() {
       document.getElementById('note-modal').style.display = 'none';
-    }
+    };
 
-    function saveNote() {
-      const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
-      const content = document.getElementById('note-content').value;
-
-      const dataUrl = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(content)));
-
-      if (editingNoteId) {
-        const item = vaultItems.find(i => i.id === editingNoteId);
-        if (item) {
-          item.name = title + '.txt';
-          item.textContent = content;
-          item.url = dataUrl;
-        }
+    window.toggleSelectItem = function(id) {
+      if (window.selectedItemIds.includes(id)) {
+        window.selectedItemIds = window.selectedItemIds.filter(itemId => itemId !== id);
       } else {
-        const newItem = {
-          id: Date.now() + Math.random(),
-          name: title + '.txt',
-          url: dataUrl,
-          type: 'text/plain',
-          category: 'text',
-          textContent: content,
-          isPlaying: false
-        };
-        vaultItems.push(newItem);
-      }
-
-      saveToLocalStorage();
-      closeNoteModal();
-      renderGrid();
-    }
-
-    function toggleSelectItem(id) {
-      if (selectedItemIds.includes(id)) {
-        selectedItemIds = selectedItemIds.filter(itemId => itemId !== id);
-      } else {
-        selectedItemIds.push(id);
+        window.selectedItemIds.push(id);
       }
       renderGrid();
-    }
+    };
 
-    function exitSelectionMode() {
-      isSelectionMode = false;
-      selectedItemIds = [];
+    window.exitSelectionMode = function() {
+      window.isSelectionMode = false;
+      window.selectedItemIds = [];
       renderGrid();
-    }
+    };
 
-    function toggleAudio(id) {
-      const item = vaultItems.find(i => i.id === id);
+    window.toggleAudio = function(id) {
+      const item = window.vaultItems.find(i => i.id === id);
       if (!item) return;
 
-      if (!audioElements[id]) {
-        audioElements[id] = new Audio(item.url);
-        audioElements[id].onended = () => {
+      if (!window.audioElements[id]) {
+        window.audioElements[id] = new Audio(item.url);
+        window.audioElements[id].onended = () => {
           item.isPlaying = false;
           renderGrid();
         };
       }
 
-      const audio = audioElements[id];
+      const audio = window.audioElements[id];
       if (item.isPlaying) {
         audio.pause();
         item.isPlaying = false;
       } else {
-        Object.keys(audioElements).forEach(k => {
-          audioElements[k].pause();
-          const target = vaultItems.find(i => i.id == k);
+        Object.keys(window.audioElements).forEach(k => {
+          window.audioElements[k].pause();
+          const target = window.vaultItems.find(i => i.id == k);
           if (target) target.isPlaying = false;
         });
 
@@ -618,9 +672,9 @@
         item.isPlaying = true;
       }
       renderGrid();
-    }
+    };
 
-    function handleSingleTap(item) {
+    window.handleSingleTap = function(item) {
       if (item.category === 'audio') {
         toggleAudio(item.id);
       } else if (item.category === 'text') {
@@ -640,72 +694,54 @@
       } else if (item.category === 'video') {
         openModal(`<video src="${item.url}" controls autoplay style="max-width:100%; max-height:60vh;"></video>`, item.name, item);
       }
-    }
+    };
 
-    function downloadSingleItem(item) {
+    window.downloadSingleItem = function(item) {
       const a = document.createElement('a');
       a.href = item.url;
       a.download = item.name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    }
+    };
 
-    function downloadSelectedFiles() {
-      vaultItems.filter(item => selectedItemIds.includes(item.id)).forEach(item => {
+    window.downloadSelectedFiles = function() {
+      window.vaultItems.filter(item => window.selectedItemIds.includes(item.id)).forEach(item => {
         downloadSingleItem(item);
       });
-    }
+    };
 
-    function deleteSelected() {
-      selectedItemIds.forEach(id => {
-        if (audioElements[id]) {
-          audioElements[id].pause();
-          delete audioElements[id];
-        }
-      });
-
-      vaultItems = vaultItems.filter(item => !selectedItemIds.includes(item.id));
-      selectedItemIds = [];
-      isSelectionMode = false;
-      saveToLocalStorage();
-      renderGrid();
-    }
-
-    function updateActionBar() {
+    window.updateActionBar = function() {
       const normalActions = document.getElementById('normal-actions');
       const selectionActions = document.getElementById('selection-actions');
       const countText = document.getElementById('selected-count');
 
-      if (isSelectionMode) {
+      if (window.isSelectionMode) {
         normalActions.style.display = 'none';
         selectionActions.style.display = 'block';
-        countText.innerText = `Selected: ${selectedItemIds.length}`;
+        countText.innerText = `Selected: ${window.selectedItemIds.length}`;
       } else {
         normalActions.style.display = 'block';
         selectionActions.style.display = 'none';
       }
-    }
+    };
 
-    function openModal(contentHTML, title, item) {
+    window.openModal = function(contentHTML, title, item) {
       document.getElementById('modal-title').innerText = title;
       const dlBtn = document.getElementById('modal-dl-btn');
       dlBtn.onclick = () => downloadSingleItem(item);
 
       document.getElementById('modal-body').innerHTML = contentHTML;
       document.getElementById('media-modal').style.display = 'flex';
-    }
+    };
 
-    function closeModal() {
+    window.closeModal = function() {
       const modalBody = document.getElementById('modal-body');
       const video = modalBody.querySelector('video');
       if (video) video.pause();
 
       document.getElementById('media-modal').style.display = 'none';
-    }
-
-    // Load saved items on start
-    renderGrid();
+    };
   </script>
 </body>
 </html>
