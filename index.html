@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RONOCK Memory Vault</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #f4f6f8;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .top-header {
+      background-color: #1abc9c;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .menu-bar {
+      background-color: #16a085;
+      display: flex;
+      overflow-x: auto;
+      padding: 10px 5px;
+    }
+
+    .menu-item {
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      white-space: nowrap;
+      font-size: 14px;
+      border-radius: 4px;
+      margin-right: 5px;
+      cursor: pointer;
+    }
+
+    .menu-item.active {
+      background-color: #f39c12;
+      font-weight: bold;
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      background-color: #e0f2f1;
+      min-height: 55px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn-import {
+      background-color: #1abc9c;
+      color: white;
+      display: inline-block;
+    }
+
+    .btn-create-note {
+      background-color: #f39c12;
+      color: white;
+      margin-left: 8px;
+      display: none;
+    }
+
+    .btn-logout {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .btn-download {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .btn-delete {
+      background-color: #e74c3c;
+      color: white;
+      margin-left: 5px;
+    }
+
+    .btn-cancel {
+      background-color: #7f8c8d;
+      color: white;
+      margin-left: 5px;
+    }
+
+    .main-container {
+      padding: 15px;
+      flex: 1;
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 15px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+      text-align: center;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .card.selected {
+      border: 2px solid #3498db;
+      background-color: #ebf5fb;
+    }
+
+    .checkbox-circle {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #bdc3c7;
+      background: rgba(255, 255, 255, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    .selection-mode .checkbox-circle {
+      display: flex;
+    }
+
+    .card.selected .checkbox-circle {
+      background: #3498db;
+      border-color: #3498db;
+    }
+
+    .card.selected .checkbox-circle::after {
+      content: '✓';
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .preview-box {
+      width: 100%;
+      height: 110px;
+      background-color: #f0f0f0;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      overflow: hidden;
+      font-size: 30px;
+      position: relative;
+    }
+
+    .preview-box img, .preview-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .note-card-preview {
+      font-size: 11px;
+      color: #555;
+      text-align: left;
+      padding: 8px;
+      width: 100%;
+      height: 100%;
+      background: #fffde7;
+      border: 1px solid #fff59d;
+      border-radius: 4px;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .card-title {
+      font-size: 12px;
+      color: #333;
+      word-break: break-all;
+      height: 16px;
+      overflow: hidden;
+      font-weight: bold;
+    }
+
+    .play-toggle-btn {
+      background: #1abc9c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 8px;
+      padding: 15px;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+    }
+
+    .close-btn {
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    .modal-body {
+      text-align: center;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .note-modal-content {
+      background: #fffbf0;
+      border-radius: 12px;
+      width: 92%;
+      max-width: 550px;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .note-modal-header {
+      background: #f7f1e3;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eccc68;
+    }
+
+    .note-modal-body {
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .note-title-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      font-weight: bold;
+      outline: none;
+      color: #2c3e50;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 8px;
+    }
+
+    .note-textarea {
+      width: 100%;
+      height: 250px;
+      border: none;
+      background: transparent;
+      font-size: 15px;
+      outline: none;
+      resize: none;
+      color: #333;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-header">
+    <div class="logo">RONOCK</div>
+    <button class="btn btn-logout">Logout</button>
+  </div>
+
+  <div class="menu-bar">
+    <div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
+    <div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
+    <div class="menu-item" onclick="switchCategory('video', this)">Video</div>
+    <div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
+    <div class="menu-item" onclick="switchCategory('text', this)">Text</div>
+  </div>
+
+  <div class="action-bar">
+    <div id="normal-actions">
+      <label for="file-import" class="btn btn-import">+ Import File</label>
+      <input type="file" id="file-import" multiple style="display: none;" onchange="handleMultipleImport(event)">
+      <button class="btn btn-create-note" id="create-note-btn" onclick="openNoteEditor()">+ Write Note</button>
+    </div>
+
+    <div id="selection-actions" style="display: none; width: 100%;">
+      <span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
+      <div style="float: right;">
+        <button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
+        <button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
+        <button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="grid-layout" id="media-grid"></div>
+  </div>
+
+  <!-- Standard Media Modal -->
+  <div id="media-modal" class="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h4 id="modal-title" style="font-size: 14px;">File View</h4>
+        <div>
+          <button id="modal-dl-btn" class="btn btn-download">Save</button>
+          <span class="close-btn" onclick="closeModal()">&times;</span>
+        </div>
+      </div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Samsung Notes Editor Modal -->
+  <div id="note-modal" class="modal" onclick="closeNoteModal()">
+    <div class="note-modal-content" onclick="event.stopPropagation()">
+      <div class="note-modal-header">
+        <span style="font-weight: bold; color: #84817a; font-size: 14px;">Samsung Note Pad</span>
+        <div>
+          <button class="btn btn-import" onclick="saveNote()">Save Note</button>
+          <span class="close-btn" onclick="closeNoteModal()">&times;</span>
+        </div>
+      </div>
+      <div class="note-modal-body">
+        <input type="text" id="note-title" class="note-title-input" placeholder="Title...">
+        <textarea id="note-content" class="note-textarea" placeholder="Start typing your note here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let vaultItems = JSON.parse(localStorage.getItem('ronock_vault_items')) || [];
+    let selectedItemIds = [];
+    let currentCategory = 'all';
+    let isSelectionMode = false;
+    let holdTimer = null;
+    let audioElements = {};
+    let editingNoteId = null;
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('ronock_vault_items', JSON.stringify(vaultItems));
+      } catch (e) {
+        alert('Storage limit full! Large files may not persist.');
+      }
+    }
+
+    function handleMultipleImport(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      const fileList = Array.from(files);
+
+      fileList.forEach((file) => {
+        let fileCategory = 'text';
+
+        if (file.type.startsWith('image/')) fileCategory = 'image';
+        else if (file.type.startsWith('video/')) fileCategory = 'video';
+        else if (file.type.startsWith('audio/')) fileCategory = 'audio';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const newItem = {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            url: e.target.result,
+            type: file.type,
+            category: fileCategory,
+            textContent: '',
+            isPlaying: false
+          };
+          vaultItems.push(newItem);
+          saveToLocalStorage();
+          renderGrid();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      event.target.value = '';
+    }
+
+    function switchCategory(category, element) {
+      currentCategory = category;
+      document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+      element.classList.add('active');
+
+      const createNoteBtn = document.getElementById('create-note-btn');
+      if (category === 'text') {
+        createNoteBtn.style.display = 'inline-block';
+      } else {
+        createNoteBtn.style.display = 'none';
+      }
+
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('media-grid');
+      grid.innerHTML = '';
+
+      if (isSelectionMode) {
+        grid.classList.add('selection-mode');
+      } else {
+        grid.classList.remove('selection-mode');
+      }
+
+      const filteredItems = currentCategory === 'all' 
+        ? vaultItems 
+        : vaultItems.filter(item => item.category === currentCategory);
+
+      filteredItems.forEach(item => {
+        const card = document.createElement('div');
+        const isSelected = selectedItemIds.includes(item.id);
+        card.className = `card ${isSelected ? 'selected' : ''}`;
+
+        let previewHTML = '';
+        if (item.category === 'image') {
+          previewHTML = `<img src="${item.url}">`;
+        } else if (item.category === 'video') {
+          previewHTML = `<video src="${item.url}"></video>`;
+        } else if (item.category === 'audio') {
+          previewHTML = `🎙️ <button class="play-toggle-btn" onclick="event.stopPropagation(); toggleAudio(${item.id})">${item.isPlaying ? 'Pause ⏸' : 'Play ▶'}</button>`;
+        } else {
+          const textPreview = item.textContent ? item.textContent : 'Text Document';
+          previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
+        }
+
+        card.innerHTML = `
+          <div class="checkbox-circle"></div>
+          <div class="preview-box">${previewHTML}</div>
+          <div class="card-title">${item.name}</div>
+        `;
+
+        const startHold = () => {
+          holdTimer = setTimeout(() => {
+            if (!isSelectionMode) {
+              isSelectionMode = true;
+              toggleSelectItem(item.id);
+            }
+          }, 3000);
+        };
+
+        const clearHold = () => {
+          if (holdTimer) clearTimeout(holdTimer);
+        };
+
+        card.addEventListener('touchstart', startHold, { passive: true });
+        card.addEventListener('touchend', clearHold);
+        card.addEventListener('touchmove', clearHold);
+
+        card.addEventListener('mousedown', startHold);
+        card.addEventListener('mouseup', clearHold);
+        card.addEventListener('mouseleave', clearHold);
+
+        card.addEventListener('click', () => {
+          if (isSelectionMode) {
+            toggleSelectItem(item.id);
+          } else {
+            handleSingleTap(item);
+          }
+        });
+
+        grid.appendChild(card);
+      });
+
+      updateActionBar();
+    }
+
+    function openNoteEditor(noteItem = null) {
+      if (noteItem) {
+        editingNoteId = noteItem.id;
+        document.getElementById('note-title').value = noteItem.name.replace('.txt', '');
+        document.getElementById('note-content').value = noteItem.textContent;
+      } else {
+        editingNoteId = null;
+        document.getElementById('note-title').value = '';
+        document.getElementById('note-content').value = '';
+      }
+      document.getElementById('note-modal').style.display = 'flex';
+    }
+
+    function closeNoteModal() {
+      document.getElementById('note-modal').style.display = 'none';
+    }
+
+    function saveNote() {
+      const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
+      const content = document.getElementById('note-content').value;
+
+      const dataUrl = 'data:text/plain;base64,' + btoa(unescape(encodeURIComponent(content)));
+
+      if (editingNoteId) {
+        const item = vaultItems.find(i => i.id === editingNoteId);
+        if (item) {
+          item.name = title + '.txt';
+          item.textContent = content;
+          item.url = dataUrl;
+        }
+      } else {
+        const newItem = {
+          id: Date.now() + Math.random(),
+          name: title + '.txt',
+          url: dataUrl,
+          type: 'text/plain',
+          category: 'text',
+          textContent: content,
+          isPlaying: false
+        };
+        vaultItems.push(newItem);
+      }
+
+      saveToLocalStorage();
+      closeNoteModal();
+      renderGrid();
+    }
+
+    function toggleSelectItem(id) {
+      if (selectedItemIds.includes(id)) {
+        selectedItemIds = selectedItemIds.filter(itemId => itemId !== id);
+      } else {
+        selectedItemIds.push(id);
+      }
+      renderGrid();
+    }
+
+    function exitSelectionMode() {
+      isSelectionMode = false;
+      selectedItemIds = [];
+      renderGrid();
+    }
+
+    function toggleAudio(id) {
+      const item = vaultItems.find(i => i.id === id);
+      if (!item) return;
+
+      if (!audioElements[id]) {
+        audioElements[id] = new Audio(item.url);
+        audioElements[id].onended = () => {
+          item.isPlaying = false;
+          renderGrid();
+        };
+      }
+
+      const audio = audioElements[id];
+      if (item.isPlaying) {
+        audio.pause();
+        item.isPlaying = false;
+      } else {
+        Object.keys(audioElements).forEach(k => {
+          audioElements[k].pause();
+          const target = vaultItems.find(i => i.id == k);
+          if (target) target.isPlaying = false;
+        });
+
+        audio.play();
+        item.isPlaying = true;
+      }
+      renderGrid();
+    }
+
+    function handleSingleTap(item) {
+      if (item.category === 'audio') {
+        toggleAudio(item.id);
+      } else if (item.category === 'text') {
+        if (item.textContent !== undefined) {
+          openNoteEditor(item);
+        } else {
+          try {
+            const decoded = decodeURIComponent(escape(atob(item.url.split(',')[1])));
+            item.textContent = decoded;
+            openNoteEditor(item);
+          } catch(e) {
+            openModal(`<pre style="text-align:left; white-space:pre-wrap; font-size:13px;">${item.url}</pre>`, item.name, item);
+          }
+        }
+      } else if (item.category === 'image') {
+        openModal(`<img src="${item.url}" style="max-width:100%; max-height:60vh;">`, item.name, item);
+      } else if (item.category === 'video') {
+        openModal(`<video src="${item.url}" controls autoplay style="max-width:100%; max-height:60vh;"></video>`, item.name, item);
+      }
+    }
+
+    function downloadSingleItem(item) {
+      const a = document.createElement('a');
+      a.href = item.url;
+      a.download = item.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function downloadSelectedFiles() {
+      vaultItems.filter(item => selectedItemIds.includes(item.id)).forEach(item => {
+        downloadSingleItem(item);
+      });
+    }
+
+    function deleteSelected() {
+      selectedItemIds.forEach(id => {
+        if (audioElements[id]) {
+          audioElements[id].pause();
+          delete audioElements[id];
+        }
+      });
+
+      vaultItems = vaultItems.filter(item => !selectedItemIds.includes(item.id));
+      selectedItemIds = [];
+      isSelectionMode = false;
+      saveToLocalStorage();
+      renderGrid();
+    }
+
+    function updateActionBar() {
+      const normalActions = document.getElementById('normal-actions');
+      const selectionActions = document.getElementById('selection-actions');
+      const countText = document.getElementById('selected-count');
+
+      if (isSelectionMode) {
+        normalActions.style.display = 'none';
+        selectionActions.style.display = 'block';
+        countText.innerText = `Selected: ${selectedItemIds.length}`;
+      } else {
+        normalActions.style.display = 'block';
+        selectionActions.style.display = 'none';
+      }
+    }
+
+    function openModal(contentHTML, title, item) {
+      document.getElementById('modal-title').innerText = title;
+      const dlBtn = document.getElementById('modal-dl-btn');
+      dlBtn.onclick = () => downloadSingleItem(item);
+
+      document.getElementById('modal-body').innerHTML = contentHTML;
+      document.getElementById('media-modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      const modalBody = document.getElementById('modal-body');
+      const video = modalBody.querySelector('video');
+      if (video) video.pause();
+
+      document.getElementById('media-modal').style.display = 'none';
+    }
+
+    // Load saved items on start
+    renderGrid();
+  </script>
+</body>
+</html>
