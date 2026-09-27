@@ -22,6 +22,81 @@
       -webkit-user-select: none;
     }
 
+    /* Strict Login Screen Styles */
+    #login-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #16a085;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    }
+
+    .login-box {
+      background: white;
+      padding: 30px 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      width: 90%;
+      max-width: 350px;
+      text-align: center;
+    }
+
+    .login-box h2 {
+      color: #1abc9c;
+      margin-bottom: 8px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .login-box p {
+      color: #7f8c8d;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #bdc3c7;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input-field:focus {
+      border-color: #1abc9c;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background: #1abc9c;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .login-btn:hover {
+      background: #16a085;
+    }
+
+    .error-msg {
+      color: #e74c3c;
+      font-size: 12px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    /* Vault Interface Styles */
     .top-header {
       background-color: #1abc9c;
       color: white;
@@ -41,6 +116,18 @@
       background: #16a085;
       padding: 4px 8px;
       border-radius: 12px;
+    }
+
+    .logout-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 8px;
     }
 
     .menu-bar {
@@ -334,39 +421,57 @@
 </head>
 <body>
 
-  <div class="top-header">
-    <div class="logo">RONOCK</div>
-    <div class="status-badge" id="sync-status">Cloud Sync Active ☁️</div>
-  </div>
-
-  <div class="menu-bar">
-    <div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
-    <div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
-    <div class="menu-item" onclick="switchCategory('video', this)">Video</div>
-    <div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
-    <div class="menu-item" onclick="switchCategory('text', this)">Text</div>
-  </div>
-
-  <div class="action-bar">
-    <div id="normal-actions">
-      <label for="file-import" class="btn btn-import">+ Import File</label>
-      <input type="file" id="file-import" multiple style="display: none;" onchange="handleMultipleImport(event)">
-      <button class="btn btn-create-note" id="create-note-btn" onclick="openNoteEditor()">+ Write Note</button>
+  <!-- Strict Login Screen -->
+  <div id="login-screen">
+    <div class="login-box">
+      <h2>RONOCK VAULT</h2>
+      <p>Protected Vault Access</p>
+      <div id="login-error" class="error-msg">Incorrect Username or Password!</div>
+      <input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off">
+      <input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
+      <button class="login-btn" onclick="handleLogin()">Unlock Vault</button>
     </div>
+  </div>
 
-    <div id="selection-actions" style="display: none; width: 100%;">
-      <span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
-      <div style="float: right;">
-        <button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
-        <button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
-        <button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
+  <!-- Dashboard View (Locked until correct login) -->
+  <div id="app-content" style="display: none;">
+    <div class="top-header">
+      <div class="logo">RONOCK</div>
+      <div>
+        <span class="status-badge" id="sync-status">Cloud Sync Active ☁️</span>
+        <button class="logout-btn" onclick="handleLogout()">Logout 🔒</button>
       </div>
     </div>
-  </div>
 
-  <div class="main-container">
-    <div class="grid-layout" id="media-grid">
-      <div class="loader">Loading cloud files...</div>
+    <div class="menu-bar">
+      <div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
+      <div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
+      <div class="menu-item" onclick="switchCategory('video', this)">Video</div>
+      <div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
+      <div class="menu-item" onclick="switchCategory('text', this)">Text</div>
+    </div>
+
+    <div class="action-bar">
+      <div id="normal-actions">
+        <label for="file-import" class="btn btn-import">+ Import File</label>
+        <input type="file" id="file-import" multiple style="display: none;" onchange="handleMultipleImport(event)">
+        <button class="btn btn-create-note" id="create-note-btn" onclick="openNoteEditor()">+ Write Note</button>
+      </div>
+
+      <div id="selection-actions" style="display: none; width: 100%;">
+        <span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
+        <div style="float: right;">
+          <button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
+          <button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
+          <button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="grid-layout" id="media-grid">
+        <div class="loader">Loading cloud files...</div>
+      </div>
     </div>
   </div>
 
@@ -384,7 +489,7 @@
     </div>
   </div>
 
-  <!-- Note Modal -->
+  <!-- Samsung Note Pad Modal -->
   <div id="note-modal" class="modal" onclick="closeNoteModal()">
     <div class="note-modal-content" onclick="event.stopPropagation()">
       <div class="note-modal-header">
@@ -405,6 +510,34 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // Standard Credentials
+    const DEFAULT_USERNAME = "ronock";
+    const DEFAULT_PASSWORD = "1234";
+
+    // Strictly ensure session is NOT saved across tab/browser exits
+    window.handleLogin = function() {
+      const u = document.getElementById('username-input').value.trim();
+      const p = document.getElementById('password-input').value.trim();
+      
+      if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
+        // Use sessionStorage: Clears automatically as soon as tab/browser closes or refreshes
+        sessionStorage.setItem('ronock_active_session', 'true');
+        showVaultAndInitFirebase();
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+      }
+    };
+
+    window.handleLogout = function() {
+      sessionStorage.removeItem('ronock_active_session');
+      location.reload();
+    };
+
+    // Auto logout when page is closed/refreshed
+    window.addEventListener('beforeunload', () => {
+      sessionStorage.removeItem('ronock_active_session');
+    });
+
     const firebaseConfig = {
       apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
       authDomain: "my-memory-vault-630b3.firebaseapp.com",
@@ -416,9 +549,31 @@
       measurementId: "G-QMBXSZD2EV"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const memoriesRef = collection(db, "memories");
+    let db = null;
+    let memoriesRef = null;
+
+    function showVaultAndInitFirebase() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-content').style.display = 'block';
+
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      memoriesRef = collection(db, "memories");
+
+      onSnapshot(memoriesRef, (snapshot) => {
+        window.vaultItems = snapshot.docs.map(doc => ({
+          docId: doc.id,
+          ...doc.data()
+        }));
+        document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+        renderGrid();
+      }, (error) => {
+        document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+      });
+    }
+
+    // Force clear session on initial load
+    sessionStorage.removeItem('ronock_active_session');
 
     window.vaultItems = [];
     window.selectedItemIds = [];
@@ -427,17 +582,6 @@
     window.holdTimer = null;
     window.audioElements = {};
     window.editingNoteDocId = null;
-
-    onSnapshot(memoriesRef, (snapshot) => {
-      window.vaultItems = snapshot.docs.map(doc => ({
-        docId: doc.id,
-        ...doc.data()
-      }));
-      document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-      renderGrid();
-    }, (error) => {
-      document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
-    });
 
     const fileToBase64 = (file) => new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -448,7 +592,7 @@
 
     window.handleMultipleImport = async function(event) {
       const files = event.target.files;
-      if (!files || files.length === 0) return;
+      if (!files || files.length === 0 || !memoriesRef) return;
 
       document.getElementById('sync-status').innerText = "Processing & Uploading... ⏳";
 
@@ -481,6 +625,7 @@
     };
 
     window.saveNote = async function() {
+      if(!memoriesRef) return;
       const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
       const content = document.getElementById('note-content').value;
 
@@ -510,6 +655,7 @@
     };
 
     window.deleteSelected = async function() {
+      if(!db) return;
       const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
       for (const item of selectedDocs) {
         if (item.docId) {
