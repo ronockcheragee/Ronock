@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RONOCK CHERAGEE</title>
+  <title>RONOCK</title>
   <style>
     * {
       box-sizing: border-box;
@@ -424,8 +424,8 @@
   <!-- Strict Login Screen -->
   <div id="login-screen">
     <div class="login-box">
-      <h2>RONOCK VAULT</h2>
-      <p>Protected Vault Access</p>
+      <h2>RONOCK CHERAGEE</h2>
+      <p>SCHOOL MEMORIES </p>
       <div id="login-error" class="error-msg">Incorrect Username or Password!</div>
       <input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off">
       <input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
@@ -433,7 +433,7 @@
     </div>
   </div>
 
-  <!-- Dashboard View (Locked until correct login) -->
+  <!-- Dashboard View -->
   <div id="app-content" style="display: none;">
     <div class="top-header">
       <div class="logo">RONOCK</div>
@@ -489,7 +489,7 @@
     </div>
   </div>
 
-  <!-- Samsung Note Pad Modal -->
+  <!-- Note Pad Modal -->
   <div id="note-modal" class="modal" onclick="closeNoteModal()">
     <div class="note-modal-content" onclick="event.stopPropagation()">
       <div class="note-modal-header">
@@ -514,13 +514,15 @@
     const DEFAULT_USERNAME = "RONOCK";
     const DEFAULT_PASSWORD = "@Ronock.268841";
 
-    // Strictly ensure session is NOT saved across tab/browser exits
+    // Cloudinary Config
+    const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
+    const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
+
     window.handleLogin = function() {
       const u = document.getElementById('username-input').value.trim();
       const p = document.getElementById('password-input').value.trim();
       
       if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
-        // Use sessionStorage: Clears automatically as soon as tab/browser closes or refreshes
         sessionStorage.setItem('ronock_active_session', 'true');
         showVaultAndInitFirebase();
       } else {
@@ -532,11 +534,6 @@
       sessionStorage.removeItem('ronock_active_session');
       location.reload();
     };
-
-    // Auto logout when page is closed/refreshed
-    window.addEventListener('beforeunload', () => {
-      sessionStorage.removeItem('ronock_active_session');
-    });
 
     const firebaseConfig = {
       apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
@@ -556,24 +553,27 @@
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('app-content').style.display = 'block';
 
-      const app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
-      memoriesRef = collection(db, "memories");
+      if (!db) {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        memoriesRef = collection(db, "memories");
 
-      onSnapshot(memoriesRef, (snapshot) => {
-        window.vaultItems = snapshot.docs.map(doc => ({
-          docId: doc.id,
-          ...doc.data()
-        }));
-        document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-        renderGrid();
-      }, (error) => {
-        document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
-      });
+        onSnapshot(memoriesRef, (snapshot) => {
+          window.vaultItems = snapshot.docs.map(doc => ({
+            docId: doc.id,
+            ...doc.data()
+          }));
+          document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+          renderGrid();
+        }, (error) => {
+          document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+        });
+      }
     }
 
-    // Force clear session on initial load
-    sessionStorage.removeItem('ronock_active_session');
+    if (sessionStorage.getItem('ronock_active_session') === 'true') {
+      showVaultAndInitFirebase();
+    }
 
     window.vaultItems = [];
     window.selectedItemIds = [];
@@ -583,18 +583,12 @@
     window.audioElements = {};
     window.editingNoteDocId = null;
 
-    const fileToBase64 = (file) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
-
     window.handleMultipleImport = async function(event) {
       const files = event.target.files;
       if (!files || files.length === 0 || !memoriesRef) return;
 
-      document.getElementById('sync-status').innerText = "Processing & Uploading... ⏳";
+      const totalFiles = files.length;
+      let completed = 0;
 
       for (const file of Array.from(files)) {
         let fileCategory = 'text';
@@ -602,25 +596,67 @@
         else if (file.type.startsWith('video/')) fileCategory = 'video';
         else if (file.type.startsWith('audio/')) fileCategory = 'audio';
 
-        try {
-          const base64Data = await fileToBase64(file);
+        let resourceType = 'auto';
+        if (fileCategory === 'video' || fileCategory === 'audio') {
+          resourceType = 'video';
+        } else if (fileCategory === 'image') {
+          resourceType = 'image';
+        } else {
+          resourceType = 'raw';
+        }
 
-          await addDoc(memoriesRef, {
-            id: Date.now() + Math.random(),
-            name: file.name,
-            url: base64Data,
-            type: file.type,
-            category: fileCategory,
-            textContent: '',
-            isPlaying: false,
-            createdAt: new Date().toISOString()
-          });
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+        try {
+          const xhr = new XMLHttpRequest();
+          const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+
+          xhr.open('POST', uploadUrl, true);
+
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const progress = Math.round((e.loaded / e.total) * 100);
+              document.getElementById('sync-status').innerText = `Uploading [${completed + 1}/${totalFiles}]: ${progress}% ⏳`;
+            }
+          };
+
+          xhr.onload = async () => {
+            if (xhr.status === 200) {
+              const res = JSON.parse(xhr.responseText);
+              await addDoc(memoriesRef, {
+                id: Date.now() + Math.random(),
+                name: file.name,
+                url: res.secure_url,
+                publicId: res.public_id,
+                type: file.type,
+                category: fileCategory,
+                textContent: '',
+                isPlaying: false,
+                createdAt: new Date().toISOString()
+              });
+
+              completed++;
+              if (completed === totalFiles) {
+                document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+              }
+            } else {
+              alert("Upload error from Cloudinary!");
+              document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+            }
+          };
+
+          xhr.onerror = () => {
+            alert("Network error during upload!");
+            document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+          };
+
+          xhr.send(formData);
         } catch(err) {
-          alert("File import failed: " + err.message);
+          alert("Import failed: " + err.message);
         }
       }
-
-      document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
       event.target.value = '';
     };
 
@@ -633,13 +669,13 @@
         if (window.editingNoteDocId) {
           const docRef = doc(db, "memories", window.editingNoteDocId);
           await updateDoc(docRef, {
-            name: title + '.txt',
+            name: title.endsWith('.txt') ? title : title + '.txt',
             textContent: content
           });
         } else {
           await addDoc(memoriesRef, {
             id: Date.now() + Math.random(),
-            name: title + '.txt',
+            name: title.endsWith('.txt') ? title : title + '.txt',
             url: '',
             type: 'text/plain',
             category: 'text',
@@ -731,7 +767,7 @@
               window.isSelectionMode = true;
               toggleSelectItem(item.id);
             }
-          }, 3000);
+          }, 1000);
         };
 
         const clearHold = () => {
