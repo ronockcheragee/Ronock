@@ -1,922 +1,969 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RONOCK</title>
-  <link rel="icon" type="image/png" href="https://i.ibb.co/JRrxsJps/image.png">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RONOCK</title>
+<link rel="icon" type="image/png" href="https://i.ibb.co/JRrxsJps/image.png">
+<style>
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+-webkit-tap-highlight-color: transparent;
+}
 
-    body {
-      background-color: #f4f6f8;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+body {
+background-color: #f4f6f8;
+display: flex;
+flex-direction: column;
+min-height: 100vh;
+user-select: none;
+-webkit-user-select: none;
+}
 
-    /* Strict Login Screen Styles */
-    #login-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #16a085;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 99999;
-    }
+/* Strict Login Screen Styles */
+#login-screen {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: #16a085;
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 99999;
+}
 
-    .login-box {
-      background: white;
-      padding: 30px 25px;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-      width: 90%;
-      max-width: 350px;
-      text-align: center;
-    }
+.login-box {
+background: white;
+padding: 30px 25px;
+border-radius: 12px;
+box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+width: 90%;
+max-width: 350px;
+text-align: center;
+}
 
-    .login-box h2 {
-      color: #1abc9c;
-      margin-bottom: 8px;
-      font-size: 22px;
-      font-weight: bold;
-    }
+.login-box h2 {
+color: #1abc9c;
+margin-bottom: 8px;
+font-size: 22px;
+font-weight: bold;
+}
 
-    .login-box p {
-      color: #7f8c8d;
-      font-size: 13px;
-      margin-bottom: 20px;
-    }
+.login-box p {
+color: #7f8c8d;
+font-size: 13px;
+margin-bottom: 20px;
+}
 
-    .input-field {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
-      border: 1px solid #bdc3c7;
-      border-radius: 6px;
-      font-size: 14px;
-      outline: none;
-    }
+.input-field {
+width: 100%;
+padding: 12px;
+margin-bottom: 12px;
+border: 1px solid #bdc3c7;
+border-radius: 6px;
+font-size: 14px;
+outline: none;
+}
 
-    .input-field:focus {
-      border-color: #1abc9c;
-    }
+.input-field:focus {
+border-color: #1abc9c;
+}
 
-    .login-btn {
-      width: 100%;
-      padding: 12px;
-      background: #1abc9c;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+.login-btn {
+width: 100%;
+padding: 12px;
+background: #1abc9c;
+color: white;
+border: none;
+border-radius: 6px;
+font-size: 15px;
+font-weight: bold;
+cursor: pointer;
+}
 
-    .login-btn:hover {
-      background: #16a085;
-    }
+.login-btn:hover {
+background: #16a085;
+}
 
-    .error-msg {
-      color: #e74c3c;
-      font-size: 12px;
-      margin-bottom: 10px;
-      display: none;
-    }
+.error-msg {
+color: #e74c3c;
+font-size: 12px;
+margin-bottom: 10px;
+display: none;
+}
 
-    /* Vault Interface Styles */
-    .top-header {
-      background-color: #1abc9c;
-      color: white;
-      padding: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+/* Vault Interface Styles */
+.top-header {
+background-color: #1abc9c;
+color: white;
+padding: 15px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
 
-    .logo {
-      font-size: 20px;
-      font-weight: bold;
-    }
+.logo {
+font-size: 20px;
+font-weight: bold;
+}
 
-    .status-badge {
-      font-size: 11px;
-      background: #16a085;
-      padding: 4px 8px;
-      border-radius: 12px;
-    }
+.status-badge {
+font-size: 11px;
+background: #16a085;
+padding: 4px 8px;
+border-radius: 12px;
+}
 
-    .logout-btn {
-      background: #e74c3c;
-      color: white;
-      border: none;
-      padding: 5px 12px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 8px;
-    }
+.logout-btn {
+background: #e74c3c;
+color: white;
+border: none;
+padding: 5px 12px;
+border-radius: 12px;
+font-size: 11px;
+font-weight: bold;
+cursor: pointer;
+margin-left: 8px;
+}
 
-    .menu-bar {
-      background-color: #16a085;
-      display: flex;
-      overflow-x: auto;
-      padding: 10px 5px;
-    }
+.menu-bar {
+background-color: #16a085;
+display: flex;
+overflow-x: auto;
+padding: 10px 5px;
+}
 
-    .menu-item {
-      color: white;
-      text-decoration: none;
-      padding: 8px 16px;
-      white-space: nowrap;
-      font-size: 14px;
-      border-radius: 4px;
-      margin-right: 5px;
-      cursor: pointer;
-    }
+.menu-item {
+color: white;
+text-decoration: none;
+padding: 8px 16px;
+white-space: nowrap;
+font-size: 14px;
+border-radius: 4px;
+margin-right: 5px;
+cursor: pointer;
+}
 
-    .menu-item.active {
-      background-color: #f39c12;
-      font-weight: bold;
-    }
+.menu-item.active {
+background-color: #f39c12;
+font-weight: bold;
+}
 
-    .action-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 15px;
-      background-color: #e0f2f1;
-      min-height: 55px;
-    }
+.action-bar {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 12px 15px;
+background-color: #e0f2f1;
+min-height: 55px;
+flex-wrap: wrap;
+gap: 10px;
+}
 
-    .btn {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 13px;
-    }
+.btn {
+padding: 8px 14px;
+border: none;
+border-radius: 4px;
+font-weight: bold;
+cursor: pointer;
+font-size: 13px;
+}
 
-    .btn-import {
-      background-color: #1abc9c;
-      color: white;
-      display: inline-block;
-    }
+.btn-import {
+background-color: #1abc9c;
+color: white;
+display: inline-block;
+}
 
-    .btn-create-note {
-      background-color: #f39c12;
-      color: white;
-      margin-left: 8px;
-      display: none;
-    }
+.btn-create-note {
+background-color: #f39c12;
+color: white;
+margin-left: 8px;
+display: none;
+}
 
-    .btn-download {
-      background-color: #3498db;
-      color: white;
-    }
+.btn-download {
+background-color: #3498db;
+color: white;
+}
 
-    .btn-delete {
-      background-color: #e74c3c;
-      color: white;
-      margin-left: 5px;
-    }
+.btn-delete {
+background-color: #e74c3c;
+color: white;
+margin-left: 5px;
+}
 
-    .btn-cancel {
-      background-color: #7f8c8d;
-      color: white;
-      margin-left: 5px;
-    }
+.btn-cancel {
+background-color: #7f8c8d;
+color: white;
+margin-left: 5px;
+}
 
-    .main-container {
-      padding: 15px;
-      flex: 1;
-    }
+.btn-select-all {
+background-color: #9b59b6;
+color: white;
+margin-left: 5px;
+}
 
-    .grid-layout {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 15px;
-    }
+.main-container {
+padding: 15px;
+flex: 1;
+}
 
-    .card {
-      background: white;
-      border-radius: 8px;
-      padding: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      position: relative;
-      text-align: center;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: all 0.2s ease;
-    }
+.grid-layout {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+gap: 15px;
+}
 
-    .card.selected {
-      border: 2px solid #3498db;
-      background-color: #ebf5fb;
-    }
+.card {
+background: white;
+border-radius: 8px;
+padding: 8px;
+box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+position: relative;
+text-align: center;
+cursor: pointer;
+border: 2px solid transparent;
+transition: all 0.2s ease;
+}
 
-    .checkbox-circle {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 2px solid #bdc3c7;
-      background: rgba(255, 255, 255, 0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 5;
-    }
+.card.selected {
+border: 2px solid #3498db;
+background-color: #ebf5fb;
+}
 
-    .selection-mode .checkbox-circle {
-      display: flex;
-    }
+.checkbox-circle {
+position: absolute;
+top: 10px;
+left: 10px;
+width: 22px;
+height: 22px;
+border-radius: 50%;
+border: 2px solid #bdc3c7;
+background: rgba(255, 255, 255, 0.8);
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 5;
+}
 
-    .card.selected .checkbox-circle {
-      background: #3498db;
-      border-color: #3498db;
-    }
+.selection-mode .checkbox-circle {
+display: flex;
+}
 
-    .card.selected .checkbox-circle::after {
-      content: '✓';
-      color: white;
-      font-size: 14px;
-      font-weight: bold;
-    }
+.card.selected .checkbox-circle {
+background: #3498db;
+border-color: #3498db;
+}
 
-    .preview-box {
-      width: 100%;
-      height: 110px;
-      background-color: #f0f0f0;
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-      overflow: hidden;
-      font-size: 30px;
-      position: relative;
-    }
+.card.selected .checkbox-circle::after {
+content: '✓';
+color: white;
+font-size: 14px;
+font-weight: bold;
+}
 
-    .preview-box img, .preview-box video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      pointer-events: none;
-    }
+.preview-box {
+width: 100%;
+height: 110px;
+background-color: #f0f0f0;
+border-radius: 6px;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+margin-bottom: 8px;
+overflow: hidden;
+font-size: 30px;
+position: relative;
+}
 
-    .note-card-preview {
-      font-size: 11px;
-      color: #555;
-      text-align: left;
-      padding: 8px;
-      width: 100%;
-      height: 100%;
-      background: #fffde7;
-      border: 1px solid #fff59d;
-      border-radius: 4px;
-      overflow: hidden;
-      word-break: break-word;
-    }
+.preview-box img, .preview-box video {
+width: 100%;
+height: 100%;
+object-fit: cover;
+pointer-events: none;
+}
 
-    .card-title {
-      font-size: 12px;
-      color: #333;
-      word-break: break-all;
-      height: 16px;
-      overflow: hidden;
-      font-weight: bold;
-    }
+.audio-preview {
+width: 100%;
+padding: 5px;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 5px;
+}
 
-    .play-toggle-btn {
-      background: #1abc9c;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 5px;
-    }
+.audio-preview audio {
+width: 100%;
+height: 35px;
+}
 
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
+.note-card-preview {
+font-size: 11px;
+color: #555;
+text-align: left;
+padding: 8px;
+width: 100%;
+height: 100%;
+background: #fffde7;
+border: 1px solid #fff59d;
+border-radius: 4px;
+overflow: hidden;
+word-break: break-word;
+}
 
-    .modal-content {
-      background: white;
-      width: 90%;
-      max-width: 500px;
-      border-radius: 8px;
-      padding: 15px;
-      position: relative;
-    }
+.card-title-container {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 4px;
+}
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 8px;
-    }
+.card-title {
+font-size: 12px;
+color: #333;
+word-break: break-all;
+height: 16px;
+overflow: hidden;
+font-weight: bold;
+flex: 1;
+text-align: left;
+}
 
-    .close-btn {
-      font-size: 22px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 10px;
-    }
+.rename-icon {
+font-size: 11px;
+cursor: pointer;
+color: #7f8c8d;
+padding: 2px;
+}
 
-    .modal-body {
-      text-align: center;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
+.rename-icon:hover {
+color: #3498db;
+}
 
-    .note-modal-content {
-      background: #fffbf0;
-      border-radius: 12px;
-      width: 92%;
-      max-width: 550px;
-      padding: 0;
-      overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    }
+.modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.85);
+z-index: 1000;
+justify-content: center;
+align-items: center;
+}
 
-    .note-modal-header {
-      background: #f7f1e3;
-      padding: 12px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #eccc68;
-    }
+.modal-content {
+background: white;
+width: 90%;
+max-width: 500px;
+border-radius: 8px;
+padding: 15px;
+position: relative;
+}
 
-    .note-modal-body {
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+.modal-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 12px;
+border-bottom: 1px solid #ddd;
+padding-bottom: 8px;
+}
 
-    .note-title-input {
-      width: 100%;
-      border: none;
-      background: transparent;
-      font-size: 18px;
-      font-weight: bold;
-      outline: none;
-      color: #2c3e50;
-      border-bottom: 1px solid #e0e0e0;
-      padding-bottom: 8px;
-    }
+.close-btn {
+font-size: 22px;
+font-weight: bold;
+cursor: pointer;
+margin-left: 10px;
+}
 
-    .note-textarea {
-      width: 100%;
-      height: 250px;
-      border: none;
-      background: transparent;
-      font-size: 15px;
-      outline: none;
-      resize: none;
-      color: #333;
-      line-height: 1.6;
-    }
+.modal-body {
+text-align: center;
+max-height: 70vh;
+overflow-y: auto;
+}
 
-    .loader {
-      font-size: 14px;
-      color: #7f8c8d;
-      text-align: center;
-      margin-top: 50px;
-    }
-  </style>
+.note-modal-content {
+background: #fffbf0;
+border-radius: 12px;
+width: 92%;
+max-width: 550px;
+padding: 0;
+overflow: hidden;
+box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.note-modal-header {
+background: #f7f1e3;
+padding: 12px 18px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-bottom: 1px solid #eccc68;
+}
+
+.note-modal-body {
+padding: 15px;
+display: flex;
+flex-direction: column;
+gap: 10px;
+}
+
+.note-title-input {
+width: 100%;
+border: none;
+background: transparent;
+font-size: 18px;
+font-weight: bold;
+outline: none;
+color: #2c3e50;
+border-bottom: 1px solid #e0e0e0;
+padding-bottom: 8px;
+}
+
+.note-textarea {
+width: 100%;
+height: 250px;
+border: none;
+background: transparent;
+font-size: 15px;
+outline: none;
+resize: none;
+color: #333;
+line-height: 1.6;
+}
+
+.loader {
+font-size: 14px;
+color: #7f8c8d;
+text-align: center;
+margin-top: 50px;
+}
+</style>
 </head>
 <body>
 
-  <!-- Strict Login Screen -->
-  <div id="login-screen">
-    <div class="login-box">
-      <h2>RONOCK CHERAGEE</h2>
-      <p>SCHOOL MEMORIES </p>
-      <div id="login-error" class="error-msg">Incorrect Username or Password!</div>
-      <input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off">
-      <input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
-      <button class="login-btn" onclick="handleLogin()">Unlock Vault</button>
-    </div>
-  </div>
-
-  <!-- Dashboard View -->
-  <div id="app-content" style="display: none;">
-    <div class="top-header">
-      <div class="logo">RONOCK</div>
-      <div>
-        <span class="status-badge" id="sync-status">Cloud Sync Active ☁️</span>
-        <button class="logout-btn" onclick="handleLogout()">Logout 🔒</button>
-      </div>
-    </div>
-
-    <div class="menu-bar">
-      <div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
-      <div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
-      <div class="menu-item" onclick="switchCategory('video', this)">Video</div>
-      <div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
-      <div class="menu-item" onclick="switchCategory('text', this)">Text</div>
-    </div>
-
-    <div class="action-bar">
-      <div id="normal-actions">
-        <label for="file-import" class="btn btn-import">+ Import File</label>
-        <input type="file" id="file-import" multiple style="display: none;" onchange="handleMultipleImport(event)">
-        <button class="btn btn-create-note" id="create-note-btn" onclick="openNoteEditor()">+ Write Note</button>
-      </div>
-
-      <div id="selection-actions" style="display: none; width: 100%;">
-        <span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
-        <div style="float: right;">
-          <button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
-          <button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
-          <button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="main-container">
-      <div class="grid-layout" id="media-grid">
-        <div class="loader">Loading cloud files...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Standard Media Modal -->
-  <div id="media-modal" class="modal" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h4 id="modal-title" style="font-size: 14px;">File View</h4>
-        <div>
-          <button id="modal-dl-btn" class="btn btn-download">Save</button>
-          <span class="close-btn" onclick="closeModal()">&times;</span>
-        </div>
-      </div>
-      <div id="modal-body"></div>
-    </div>
-  </div>
-
-  <!-- Note Pad Modal -->
-  <div id="note-modal" class="modal" onclick="closeNoteModal()">
-    <div class="note-modal-content" onclick="event.stopPropagation()">
-      <div class="note-modal-header">
-        <span style="font-weight: bold; color: #84817a; font-size: 14px;">Samsung Note Pad</span>
-        <div>
-          <button class="btn btn-import" onclick="saveNote()">Save Note</button>
-          <span class="close-btn" onclick="closeNoteModal()">&times;</span>
-        </div>
-      </div>
-      <div class="note-modal-body">
-        <input type="text" id="note-title" class="note-title-input" placeholder="Title...">
-        <textarea id="note-content" class="note-textarea" placeholder="Start typing your note here..."></textarea>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // Standard Credentials
-    const DEFAULT_USERNAME = "RONOCK";
-    const DEFAULT_PASSWORD = "@Ronock.268841";
-
-    // Cloudinary Config
-    const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
-    const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
-
-    window.handleLogin = function() {
-      const u = document.getElementById('username-input').value.trim();
-      const p = document.getElementById('password-input').value.trim();
-      
-      if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
-        sessionStorage.setItem('ronock_active_session', 'true');
-        showVaultAndInitFirebase();
-      } else {
-        document.getElementById('login-error').style.display = 'block';
-      }
-    };
-
-    window.handleLogout = function() {
-      sessionStorage.removeItem('ronock_active_session');
-      location.reload();
-    };
-
-    const firebaseConfig = {
-      apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
-      authDomain: "my-memory-vault-630b3.firebaseapp.com",
-      databaseURL: "https://my-memory-vault-630b3-default-rtdb.firebaseio.com",
-      projectId: "my-memory-vault-630b3",
-      storageBucket: "my-memory-vault-630b3.appspot.com",
-      messagingSenderId: "31545523452",
-      appId: "1:31545523452:web:aadaa50f7a7571c8beeb79",
-      measurementId: "G-QMBXSZD2EV"
-    };
-
-    let db = null;
-    let memoriesRef = null;
-
-    function showVaultAndInitFirebase() {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app-content').style.display = 'block';
-
-      if (!db) {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        memoriesRef = collection(db, "memories");
-
-        onSnapshot(memoriesRef, (snapshot) => {
-          window.vaultItems = snapshot.docs.map(doc => ({
-            docId: doc.id,
-            ...doc.data()
-          }));
-          document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-          renderGrid();
-        }, (error) => {
-          document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
-        });
-      }
-    }
-
-    if (sessionStorage.getItem('ronock_active_session') === 'true') {
-      showVaultAndInitFirebase();
-    }
-
-    window.vaultItems = [];
-    window.selectedItemIds = [];
-    window.currentCategory = 'all';
-    window.isSelectionMode = false;
-    window.holdTimer = null;
-    window.audioElements = {};
-    window.editingNoteDocId = null;
-
-    window.handleMultipleImport = async function(event) {
-      const files = event.target.files;
-      if (!files || files.length === 0 || !memoriesRef) return;
-
-      const totalFiles = files.length;
-      let completed = 0;
-
-      for (const file of Array.from(files)) {
-        let fileCategory = 'text';
-        if (file.type.startsWith('image/')) fileCategory = 'image';
-        else if (file.type.startsWith('video/')) fileCategory = 'video';
-        else if (file.type.startsWith('audio/')) fileCategory = 'audio';
-
-        let resourceType = 'auto';
-        if (fileCategory === 'video' || fileCategory === 'audio') {
-          resourceType = 'video';
-        } else if (fileCategory === 'image') {
-          resourceType = 'image';
-        } else {
-          resourceType = 'raw';
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-        try {
-          const xhr = new XMLHttpRequest();
-          const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-
-          xhr.open('POST', uploadUrl, true);
-
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              const progress = Math.round((e.loaded / e.total) * 100);
-              document.getElementById('sync-status').innerText = `Uploading [${completed + 1}/${totalFiles}]: ${progress}% ⏳`;
-            }
-          };
-
-          xhr.onload = async () => {
-            if (xhr.status === 200) {
-              const res = JSON.parse(xhr.responseText);
-              await addDoc(memoriesRef, {
-                id: Date.now() + Math.random(),
-                name: file.name,
-                url: res.secure_url,
-                publicId: res.public_id,
-                type: file.type,
-                category: fileCategory,
-                textContent: '',
-                isPlaying: false,
-                createdAt: new Date().toISOString()
-              });
-
-              completed++;
-              if (completed === totalFiles) {
-                document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-              }
-            } else {
-              alert("Upload error from Cloudinary!");
-              document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-            }
-          };
-
-          xhr.onerror = () => {
-            alert("Network error during upload!");
-            document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-          };
-
-          xhr.send(formData);
-        } catch(err) {
-          alert("Import failed: " + err.message);
-        }
-      }
-      event.target.value = '';
-    };
-
-    window.saveNote = async function() {
-      if(!memoriesRef) return;
-      const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
-      const content = document.getElementById('note-content').value;
-
-      try {
-        if (window.editingNoteDocId) {
-          const docRef = doc(db, "memories", window.editingNoteDocId);
-          await updateDoc(docRef, {
-            name: title.endsWith('.txt') ? title : title + '.txt',
-            textContent: content
-          });
-        } else {
-          await addDoc(memoriesRef, {
-            id: Date.now() + Math.random(),
-            name: title.endsWith('.txt') ? title : title + '.txt',
-            url: '',
-            type: 'text/plain',
-            category: 'text',
-            textContent: content,
-            isPlaying: false,
-            createdAt: new Date().toISOString()
-          });
-        }
-        closeNoteModal();
-      } catch(err) {
-        alert("Failed to save note: " + err.message);
-      }
-    };
-
-    window.deleteSelected = async function() {
-      if(!db) return;
-      const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
-      for (const item of selectedDocs) {
-        if (item.docId) {
-          await deleteDoc(doc(db, "memories", item.docId));
-        }
-      }
-      window.selectedItemIds = [];
-      window.isSelectionMode = false;
-      renderGrid();
-    };
-
-    window.switchCategory = function(category, element) {
-      window.currentCategory = category;
-      document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-      element.classList.add('active');
-
-      const createNoteBtn = document.getElementById('create-note-btn');
-      if (category === 'text') {
-        createNoteBtn.style.display = 'inline-block';
-      } else {
-        createNoteBtn.style.display = 'none';
-      }
-
-      renderGrid();
-    };
-
-    window.renderGrid = function() {
-      const grid = document.getElementById('media-grid');
-      grid.innerHTML = '';
-
-      if (window.isSelectionMode) {
-        grid.classList.add('selection-mode');
-      } else {
-        grid.classList.remove('selection-mode');
-      }
-
-      const filteredItems = window.currentCategory === 'all' 
-        ? window.vaultItems 
-        : window.vaultItems.filter(item => item.category === window.currentCategory);
-
-      if(filteredItems.length === 0) {
-        grid.innerHTML = `<div class="loader">No items in ${window.currentCategory} category yet.</div>`;
-        updateActionBar();
-        return;
-      }
-
-      filteredItems.forEach(item => {
-        const card = document.createElement('div');
-        const isSelected = window.selectedItemIds.includes(item.id);
-        card.className = `card ${isSelected ? 'selected' : ''}`;
-
-        let previewHTML = '';
-        if (item.category === 'image') {
-          previewHTML = `<img src="${item.url}">`;
-        } else if (item.category === 'video') {
-          previewHTML = `<video src="${item.url}"></video>`;
-        } else if (item.category === 'audio') {
-          previewHTML = `🎙️ <button class="play-toggle-btn" onclick="event.stopPropagation(); toggleAudio(${item.id})">${item.isPlaying ? 'Pause ⏸' : 'Play ▶'}</button>`;
-        } else {
-          const textPreview = item.textContent ? item.textContent : 'Text Document';
-          previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
-        }
-
-        card.innerHTML = `
-          <div class="checkbox-circle"></div>
-          <div class="preview-box">${previewHTML}</div>
-          <div class="card-title">${item.name}</div>
-        `;
-
-        const startHold = () => {
-          window.holdTimer = setTimeout(() => {
-            if (!window.isSelectionMode) {
-              window.isSelectionMode = true;
-              toggleSelectItem(item.id);
-            }
-          }, 1000);
-        };
-
-        const clearHold = () => {
-          if (window.holdTimer) clearTimeout(window.holdTimer);
-        };
-
-        card.addEventListener('touchstart', startHold, { passive: true });
-        card.addEventListener('touchend', clearHold);
-        card.addEventListener('touchmove', clearHold);
-
-        card.addEventListener('mousedown', startHold);
-        card.addEventListener('mouseup', clearHold);
-        card.addEventListener('mouseleave', clearHold);
-
-        card.addEventListener('click', () => {
-          if (window.isSelectionMode) {
-            toggleSelectItem(item.id);
-          } else {
-            handleSingleTap(item);
-          }
-        });
-
-        grid.appendChild(card);
-      });
-
-      updateActionBar();
-    };
-
-    window.openNoteEditor = function(noteItem = null) {
-      if (noteItem) {
-        window.editingNoteDocId = noteItem.docId;
-        document.getElementById('note-title').value = noteItem.name.replace('.txt', '');
-        document.getElementById('note-content').value = noteItem.textContent;
-      } else {
-        window.editingNoteDocId = null;
-        document.getElementById('note-title').value = '';
-        document.getElementById('note-content').value = '';
-      }
-      document.getElementById('note-modal').style.display = 'flex';
-    };
-
-    window.closeNoteModal = function() {
-      document.getElementById('note-modal').style.display = 'none';
-    };
-
-    window.toggleSelectItem = function(id) {
-      if (window.selectedItemIds.includes(id)) {
-        window.selectedItemIds = window.selectedItemIds.filter(itemId => itemId !== id);
-      } else {
-        window.selectedItemIds.push(id);
-      }
-      renderGrid();
-    };
-
-    window.exitSelectionMode = function() {
-      window.isSelectionMode = false;
-      window.selectedItemIds = [];
-      renderGrid();
-    };
-
-    window.toggleAudio = function(id) {
-      const item = window.vaultItems.find(i => i.id === id);
-      if (!item) return;
-
-      if (!window.audioElements[id]) {
-        window.audioElements[id] = new Audio(item.url);
-        window.audioElements[id].onended = () => {
-          item.isPlaying = false;
-          renderGrid();
-        };
-      }
-
-      const audio = window.audioElements[id];
-      if (item.isPlaying) {
-        audio.pause();
-        item.isPlaying = false;
-      } else {
-        Object.keys(window.audioElements).forEach(k => {
-          window.audioElements[k].pause();
-          const target = window.vaultItems.find(i => i.id == k);
-          if (target) target.isPlaying = false;
-        });
-
-        audio.play();
-        item.isPlaying = true;
-      }
-      renderGrid();
-    };
-
-    window.handleSingleTap = function(item) {
-      if (item.category === 'audio') {
-        toggleAudio(item.id);
-      } else if (item.category === 'text') {
-        openNoteEditor(item);
-      } else if (item.category === 'image') {
-        openModal(`<img src="${item.url}" style="max-width:100%; max-height:60vh;">`, item.name, item);
-      } else if (item.category === 'video') {
-        openModal(`<video src="${item.url}" controls autoplay style="max-width:100%; max-height:60vh;"></video>`, item.name, item);
-      }
-    };
-
-    window.downloadSingleItem = function(item) {
-      const a = document.createElement('a');
-      a.href = item.url;
-      a.download = item.name;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-
-    window.downloadSelectedFiles = function() {
-      window.vaultItems.filter(item => window.selectedItemIds.includes(item.id)).forEach(item => {
-        downloadSingleItem(item);
-      });
-    };
-
-    window.updateActionBar = function() {
-      const normalActions = document.getElementById('normal-actions');
-      const selectionActions = document.getElementById('selection-actions');
-      const countText = document.getElementById('selected-count');
-
-      if (window.isSelectionMode) {
-        normalActions.style.display = 'none';
-        selectionActions.style.display = 'block';
-        countText.innerText = `Selected: ${window.selectedItemIds.length}`;
-      } else {
-        normalActions.style.display = 'block';
-        selectionActions.style.display = 'none';
-      }
-    };
-
-    window.openModal = function(contentHTML, title, item) {
-      document.getElementById('modal-title').innerText = title;
-      const dlBtn = document.getElementById('modal-dl-btn');
-      dlBtn.onclick = () => downloadSingleItem(item);
-
-      document.getElementById('modal-body').innerHTML = contentHTML;
-      document.getElementById('media-modal').style.display = 'flex';
-    };
-
-    window.closeModal = function() {
-      const modalBody = document.getElementById('modal-body');
-      const video = modalBody.querySelector('video');
-      if (video) video.pause();
-
-      document.getElementById('media-modal').style.display = 'none';
-    };
-  </script>
+<!-- Strict Login Screen -->
+<div id="login-screen">
+<div class="login-box">
+<h2>RONOCK CHERAGEE</h2>
+<p>SCHOOL MEMORIES </p>
+<div id="login-error" class="error-msg">Incorrect Username or Password!</div>
+<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off">
+<input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
+<button class="login-btn" onclick="handleLogin()">Unlock Vault</button>
+</div>
+</div>
+
+<!-- Dashboard View -->
+<div id="app-content" style="display: none;">
+<div class="top-header">
+<div class="logo">RONOCK</div>
+<div>
+<span class="status-badge" id="sync-status">Cloud Sync Active ☁️</span>
+<button class="logout-btn" onclick="handleLogout()">Logout 🔒</button>
+</div>
+</div>
+
+<div class="menu-bar">
+<div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
+<div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
+<div class="menu-item" onclick="switchCategory('video', this)">Video</div>
+<div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
+<div class="menu-item" onclick="switchCategory('text', this)">Text</div>
+</div>
+
+<div class="action-bar">
+<div id="normal-actions">
+<label for="file-import" class="btn btn-import">+ Import File</label>
+<input type="file" id="file-import" multiple style="display: none;" onchange="handleMultipleImport(event)">
+<button class="btn btn-create-note" id="create-note-btn" onclick="openNoteEditor()">+ Write Note</button>
+</div>
+
+<div id="selection-actions" style="display: none; width: 100%;">
+<span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
+<div style="float: right;">
+<button class="btn btn-select-all" onclick="selectAllItems()">Select All</button>
+<button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
+<button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
+<button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
+</div>
+</div>
+</div>
+
+<div class="main-container">
+<div class="grid-layout" id="media-grid">
+<div class="loader">Loading cloud files...</div>
+</div>
+</div>
+</div>
+
+<!-- Standard Media Modal -->
+<div id="media-modal" class="modal" onclick="closeModal()">
+<div class="modal-content" onclick="event.stopPropagation()">
+<div class="modal-header">
+<h4 id="modal-title" style="font-size: 14px;">File View</h4>
+<div>
+<button id="modal-dl-btn" class="btn btn-download">Save</button>
+<span class="close-btn" onclick="closeModal()">×</span>
+</div>
+</div>
+<div id="modal-body"></div>
+</div>
+</div>
+
+<!-- Note Pad Modal -->
+<div id="note-modal" class="modal" onclick="closeNoteModal()">
+<div class="note-modal-content" onclick="event.stopPropagation()">
+<div class="note-modal-header">
+<span style="font-weight: bold; color: #84817a; font-size: 14px;">Samsung Note Pad</span>
+<div>
+<button class="btn btn-import" onclick="saveNote()">Save Note</button>
+<span class="close-btn" onclick="closeNoteModal()">×</span>
+</div>
+</div>
+<div class="note-modal-body">
+<input type="text" id="note-title" class="note-title-input" placeholder="Title...">
+<textarea id="note-content" class="note-textarea" placeholder="Start typing your note here..."></textarea>
+</div>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Standard Credentials
+const DEFAULT_USERNAME = "RONOCK";
+const DEFAULT_PASSWORD = "@Ronock.268841";
+
+// Cloudinary Config
+const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
+const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
+
+window.handleLogin = function() {
+const u = document.getElementById('username-input').value.trim();
+const p = document.getElementById('password-input').value.trim();
+
+if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
+sessionStorage.setItem('ronock_active_session', 'true');
+showVaultAndInitFirebase();
+} else {
+document.getElementById('login-error').style.display = 'block';
+}
+};
+
+window.handleLogout = function() {
+sessionStorage.removeItem('ronock_active_session');
+location.reload();
+};
+
+const firebaseConfig = {
+apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
+authDomain: "my-memory-vault-630b3.firebaseapp.com",
+databaseURL: "https://my-memory-vault-630b3-default-rtdb.firebaseio.com",
+projectId: "my-memory-vault-630b3",
+storageBucket: "my-memory-vault-630b3.appspot.com",
+messagingSenderId: "31545523452",
+appId: "1:31545523452:web:aadaa50f7a7571c8beeb79",
+measurementId: "G-QMBXSZD2EV"
+};
+
+let db = null;
+let memoriesRef = null;
+
+function showVaultAndInitFirebase() {
+document.getElementById('login-screen').style.display = 'none';
+document.getElementById('app-content').style.display = 'block';
+
+if (!db) {
+const app = initializeApp(firebaseConfig);
+db = getFirestore(app);
+memoriesRef = collection(db, "memories");
+
+onSnapshot(memoriesRef, (snapshot) => {
+window.vaultItems = snapshot.docs.map(doc => ({
+docId: doc.id,
+...doc.data()
+}));
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+renderGrid();
+}, (error) => {
+document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+});
+}
+}
+
+if (sessionStorage.getItem('ronock_active_session') === 'true') {
+showVaultAndInitFirebase();
+}
+
+window.vaultItems = [];
+window.selectedItemIds = [];
+window.currentCategory = 'all';
+window.isSelectionMode = false;
+window.holdTimer = null;
+window.editingNoteDocId = null;
+
+window.handleMultipleImport = async function(event) {
+const files = event.target.files;
+if (!files || files.length === 0 || !memoriesRef) return;
+
+const totalFiles = files.length;
+let completed = 0;
+
+for (const file of Array.from(files)) {
+let fileCategory = 'text';
+if (file.type.startsWith('image/')) fileCategory = 'image';
+else if (file.type.startsWith('video/')) fileCategory = 'video';
+else if (file.type.startsWith('audio/')) fileCategory = 'audio';
+
+let resourceType = 'auto';
+if (fileCategory === 'video' || fileCategory === 'audio') {
+resourceType = 'video';
+} else if (fileCategory === 'image') {
+resourceType = 'image';
+} else {
+resourceType = 'raw';
+}
+
+const formData = new FormData();
+formData.append('file', file);
+formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+try {
+const xhr = new XMLHttpRequest();
+const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+
+xhr.open('POST', uploadUrl, true);
+
+xhr.upload.onprogress = (e) => {
+if (e.lengthComputable) {
+const progress = Math.round((e.loaded / e.total) * 100);
+document.getElementById('sync-status').innerText = `Uploading [${completed + 1}/${totalFiles}]: ${progress}% ⏳`;
+}
+};
+
+xhr.onload = async () => {
+if (xhr.status === 200) {
+const res = JSON.parse(xhr.responseText);
+
+// STRICT DUPLICATE CHECK: Name AND Size duto-i same holei shudhu Overwrite/Modify hobe
+const existingItem = window.vaultItems.find(item => 
+  item.name === file.name && item.fileSize === file.size
+);
+
+if (existingItem) {
+// Overwrite/Update existing record
+const docRef = doc(db, "memories", existingItem.docId);
+await updateDoc(docRef, {
+url: res.secure_url,
+publicId: res.public_id,
+type: file.type,
+fileSize: file.size,
+createdAt: new Date().toISOString()
+});
+} else {
+// New Item Add
+await addDoc(memoriesRef, {
+id: Date.now() + Math.random(),
+name: file.name,
+url: res.secure_url,
+publicId: res.public_id,
+type: file.type,
+fileSize: file.size || 0,
+category: fileCategory,
+textContent: '',
+createdAt: new Date().toISOString()
+});
+}
+
+completed++;
+if (completed === totalFiles) {
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+}
+} else {
+alert("Upload error from Cloudinary!");
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+}
+};
+
+xhr.onerror = () => {
+alert("Network error during upload!");
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+};
+
+xhr.send(formData);
+} catch(err) {
+alert("Import failed: " + err.message);
+}
+}
+event.target.value = '';
+};
+
+window.saveNote = async function() {
+if(!memoriesRef) return;
+const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
+const content = document.getElementById('note-content').value;
+
+try {
+if (window.editingNoteDocId) {
+const docRef = doc(db, "memories", window.editingNoteDocId);
+await updateDoc(docRef, {
+name: title.endsWith('.txt') ? title : title + '.txt',
+textContent: content
+});
+} else {
+await addDoc(memoriesRef, {
+id: Date.now() + Math.random(),
+name: title.endsWith('.txt') ? title : title + '.txt',
+url: '',
+type: 'text/plain',
+category: 'text',
+textContent: content,
+createdAt: new Date().toISOString()
+});
+}
+closeNoteModal();
+} catch(err) {
+alert("Failed to save note: " + err.message);
+}
+};
+
+window.renameItem = async function(event, docId, currentName) {
+event.stopPropagation();
+const newName = prompt("Enter new name:", currentName);
+if (newName && newName.trim() !== "" && newName !== currentName) {
+try {
+const docRef = doc(db, "memories", docId);
+await updateDoc(docRef, { name: newName.trim() });
+} catch(err) {
+alert("Failed to rename: " + err.message);
+}
+}
+};
+
+window.selectAllItems = function() {
+const filteredItems = window.currentCategory === 'all'
+? window.vaultItems
+: window.vaultItems.filter(item => item.category === window.currentCategory);
+
+window.selectedItemIds = filteredItems.map(item => item.id);
+renderGrid();
+};
+
+window.deleteSelected = async function() {
+if(!db) return;
+const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
+for (const item of selectedDocs) {
+if (item.docId) {
+await deleteDoc(doc(db, "memories", item.docId));
+}
+}
+window.selectedItemIds = [];
+window.isSelectionMode = false;
+renderGrid();
+};
+
+window.switchCategory = function(category, element) {
+window.currentCategory = category;
+document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+element.classList.add('active');
+
+const createNoteBtn = document.getElementById('create-note-btn');
+if (category === 'text') {
+createNoteBtn.style.display = 'inline-block';
+} else {
+createNoteBtn.style.display = 'none';
+}
+
+renderGrid();
+};
+
+window.renderGrid = function() {
+const grid = document.getElementById('media-grid');
+grid.innerHTML = '';
+
+if (window.isSelectionMode) {
+grid.classList.add('selection-mode');
+} else {
+grid.classList.remove('selection-mode');
+}
+
+const filteredItems = window.currentCategory === 'all'
+? window.vaultItems
+: window.vaultItems.filter(item => item.category === window.currentCategory);
+
+if(filteredItems.length === 0) {
+grid.innerHTML = `<div class="loader">No items in ${window.currentCategory} category yet.</div>`;
+updateActionBar();
+return;
+}
+
+filteredItems.forEach(item => {
+const card = document.createElement('div');
+const isSelected = window.selectedItemIds.includes(item.id);
+card.className = `card ${isSelected ? 'selected' : ''}`;
+
+let previewHTML = '';
+if (item.category === 'image') {
+previewHTML = `<img src="${item.url}">`;
+} else if (item.category === 'video') {
+previewHTML = `<video src="${item.url}"></video>`;
+} else if (item.category === 'audio') {
+previewHTML = `
+<div class="audio-preview">
+<span style="font-size:24px;">🎙️️</span>
+<audio src="${item.url}" controls onclick="event.stopPropagation()"></audio>
+</div>`;
+} else {
+const textPreview = item.textContent ? item.textContent : 'Text Document';
+previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
+}
+
+card.innerHTML = `
+<div class="checkbox-circle"></div>
+<div class="preview-box">${previewHTML}</div>
+<div class="card-title-container">
+<div class="card-title">${item.name}</div>
+<span class="rename-icon" title="Rename" onclick="renameItem(event, '${item.docId}', '${item.name}')">✏</span>
+</div>`;
+
+const startHold = () => {
+window.holdTimer = setTimeout(() => {
+if (!window.isSelectionMode) {
+window.isSelectionMode = true;
+toggleSelectItem(item.id);
+}
+}, 1000);
+};
+
+const clearHold = () => {
+if (window.holdTimer) clearTimeout(window.holdTimer);
+};
+
+card.addEventListener('touchstart', startHold, { passive: true });
+card.addEventListener('touchend', clearHold);
+card.addEventListener('touchmove', clearHold);
+
+card.addEventListener('mousedown', startHold);
+card.addEventListener('mouseup', clearHold);
+card.addEventListener('mouseleave', clearHold);
+
+card.addEventListener('click', (e) => {
+if (e.target.classList.contains('rename-icon')) return;
+if (window.isSelectionMode) {
+toggleSelectItem(item.id);
+} else if (item.category !== 'audio') {
+handleSingleTap(item);
+}
+});
+
+grid.appendChild(card);
+});
+
+updateActionBar();
+};
+
+window.openNoteEditor = function(noteItem = null) {
+if (noteItem) {
+window.editingNoteDocId = noteItem.docId;
+document.getElementById('note-title').value = noteItem.name.replace('.txt', '');
+document.getElementById('note-content').value = noteItem.textContent;
+} else {
+window.editingNoteDocId = null;
+document.getElementById('note-title').value = '';
+document.getElementById('note-content').value = '';
+}
+document.getElementById('note-modal').style.display = 'flex';
+};
+
+window.closeNoteModal = function() {
+document.getElementById('note-modal').style.display = 'none';
+};
+
+window.toggleSelectItem = function(id) {
+if (window.selectedItemIds.includes(id)) {
+window.selectedItemIds = window.selectedItemIds.filter(itemId => itemId !== id);
+} else {
+window.selectedItemIds.push(id);
+}
+renderGrid();
+};
+
+window.exitSelectionMode = function() {
+window.isSelectionMode = false;
+window.selectedItemIds = [];
+renderGrid();
+};
+
+window.handleSingleTap = function(item) {
+if (item.category === 'text') {
+openNoteEditor(item);
+} else if (item.category === 'image') {
+openModal(`<img src="${item.url}" style="max-width:100%; max-height:60vh;">`, item.name, item);
+} else if (item.category === 'video') {
+openModal(`<video src="${item.url}" controls autoplay style="max-width:100%; max-height:60vh;"></video>`, item.name, item);
+}
+};
+
+window.downloadSingleItem = function(item) {
+const a = document.createElement('a');
+a.href = item.url;
+a.download = item.name;
+a.target = "_blank";
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+};
+
+window.downloadSelectedFiles = function() {
+window.vaultItems.filter(item => window.selectedItemIds.includes(item.id)).forEach(item => {
+downloadSingleItem(item);
+});
+};
+
+window.updateActionBar = function() {
+const normalActions = document.getElementById('normal-actions');
+const selectionActions = document.getElementById('selection-actions');
+const countText = document.getElementById('selected-count');
+
+if (window.isSelectionMode) {
+normalActions.style.display = 'none';
+selectionActions.style.display = 'block';
+countText.innerText = `Selected: ${window.selectedItemIds.length}`;
+} else {
+normalActions.style.display = 'block';
+selectionActions.style.display = 'none';
+}
+};
+
+window.openModal = function(contentHTML, title, item) {
+document.getElementById('modal-title').innerText = title;
+const dlBtn = document.getElementById('modal-dl-btn');
+dlBtn.onclick = () => downloadSingleItem(item);
+
+document.getElementById('modal-body').innerHTML = contentHTML;
+document.getElementById('media-modal').style.display = 'flex';
+};
+
+window.closeModal = function() {
+const modalBody = document.getElementById('modal-body');
+const video = modalBody.querySelector('video');
+if (video) video.pause();
+
+document.getElementById('media-modal').style.display = 'none';
+};
+</script>
 </body>
 </html>
