@@ -615,14 +615,9 @@ window.isSelectionMode = false;
 window.holdTimer = null;
 window.editingNoteDocId = null;
 
-window.handleMultipleImport = async function(event) {
-const files = event.target.files;
-if (!files || files.length === 0 || !memoriesRef) return;
-
-const totalFiles = files.length;
-let completed = 0;
-
-for (const file of Array.from(files)) {
+// Single File Upload Helper (Promise-based)
+function uploadSingleFile(file, fileIndex, totalFiles) {
+return new Promise((resolve, reject) => {
 let fileCategory = 'text';
 if (file.type.startsWith('image/')) fileCategory = 'image';
 else if (file.type.startsWith('video/')) fileCategory = 'video';
@@ -641,7 +636,6 @@ const formData = new FormData();
 formData.append('file', file);
 formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-try {
 const xhr = new XMLHttpRequest();
 const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
 
@@ -650,7 +644,7 @@ xhr.open('POST', uploadUrl, true);
 xhr.upload.onprogress = (e) => {
 if (e.lengthComputable) {
 const progress = Math.round((e.loaded / e.total) * 100);
-document.getElementById('sync-status').innerText = `Uploading [${completed + 1}/${totalFiles}]: ${progress}% ⏳`;
+document.getElementById('sync-status').innerText = `Uploading [${fileIndex + 1}/${totalFiles}]: ${progress}% ⏳`;
 }
 };
 
@@ -658,13 +652,13 @@ xhr.onload = async () => {
 if (xhr.status === 200) {
 const res = JSON.parse(xhr.responseText);
 
-// STRICT DUPLICATE CHECK: Name AND Size duto-i same holei shudhu Overwrite/Modify hobe
+// STRICT DUPLICATE CHECK: Exact Name AND Exact Size match
 const existingItem = window.vaultItems.find(item => 
   item.name === file.name && item.fileSize === file.size
 );
 
+let isOverwritten = false;
 if (existingItem) {
-// Overwrite/Update existing record
 const docRef = doc(db, "memories", existingItem.docId);
 await updateDoc(docRef, {
 url: res.secure_url,
@@ -673,8 +667,8 @@ type: file.type,
 fileSize: file.size,
 createdAt: new Date().toISOString()
 });
+isOverwritten = true;
 } else {
-// New Item Add
 await addDoc(memoriesRef, {
 id: Date.now() + Math.random(),
 name: file.name,
@@ -687,28 +681,45 @@ textContent: '',
 createdAt: new Date().toISOString()
 });
 }
-
-completed++;
-if (completed === totalFiles) {
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-}
+resolve({ success: true, overwritten: isOverwritten });
 } else {
-alert("Upload error from Cloudinary!");
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+reject(new Error("Cloudinary error"));
 }
 };
 
-xhr.onerror = () => {
-alert("Network error during upload!");
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
-};
-
+xhr.onerror = () => reject(new Error("Network error"));
 xhr.send(formData);
-} catch(err) {
-alert("Import failed: " + err.message);
+});
+}
+
+// Sequential Import (One by One Upload)
+window.handleMultipleImport = async function(event) {
+const files = event.target.files;
+if (!files || files.length === 0 || !memoriesRef) return;
+
+const fileArray = Array.from(files);
+const totalFiles = fileArray.length;
+let newCount = 0;
+let overwrittenCount = 0;
+
+for (let i = 0; i < totalFiles; i++) {
+try {
+const result = await uploadSingleFile(fileArray[i], i, totalFiles);
+if (result.overwritten) {
+overwrittenCount++;
+} else {
+newCount++;
+}
+} catch (err) {
+console.error(`Error uploading ${fileArray[i].name}:`, err);
 }
 }
+
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
 event.target.value = '';
+
+// Summary Alert Popup
+alert(`Upload Finished!\n✅ ${newCount} New files uploaded\n🔄 ${overwrittenCount} Files updated/overwritten`);
 };
 
 window.saveNote = async function() {
@@ -823,7 +834,7 @@ previewHTML = `<video src="${item.url}"></video>`;
 } else if (item.category === 'audio') {
 previewHTML = `
 <div class="audio-preview">
-<span style="font-size:24px;">🎙️️</span>
+<span style="font-size:24px;">🎙</span>
 <audio src="${item.url}" controls onclick="event.stopPropagation()"></audio>
 </div>`;
 } else {
@@ -966,4 +977,4 @@ document.getElementById('media-modal').style.display = 'none';
 };
 </script>
 </body>
-</html>
+  </html>
