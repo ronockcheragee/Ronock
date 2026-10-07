@@ -615,12 +615,22 @@ window.isSelectionMode = false;
 window.holdTimer = null;
 window.editingNoteDocId = null;
 
+// Helper to get play-compatible web URL for High Quality MOV & MP4 videos
+function getOptimizedMediaUrl(url, category) {
+if (!url) return '';
+if (category === 'video' && url.includes('/upload/')) {
+// Cloudinary Dynamic Transcoding (Convert MOV/HEVC to web-friendly MP4 with full high quality)
+return url.replace('/upload/', '/upload/f_auto,q_auto/');
+}
+return url;
+}
+
 // Single File Upload Helper (Promise-based)
 function uploadSingleFile(file, fileIndex, totalFiles) {
 return new Promise((resolve, reject) => {
 let fileCategory = 'text';
 if (file.type.startsWith('image/')) fileCategory = 'image';
-else if (file.type.startsWith('video/')) fileCategory = 'video';
+else if (file.type.startsWith('video/') || file.name.endsWith('.MOV') || file.name.endsWith('.mov')) fileCategory = 'video';
 else if (file.type.startsWith('audio/')) fileCategory = 'audio';
 
 let resourceType = 'auto';
@@ -826,11 +836,13 @@ const card = document.createElement('div');
 const isSelected = window.selectedItemIds.includes(item.id);
 card.className = `card ${isSelected ? 'selected' : ''}`;
 
+const playableUrl = getOptimizedMediaUrl(item.url, item.category);
+
 let previewHTML = '';
 if (item.category === 'image') {
 previewHTML = `<img src="${item.url}">`;
 } else if (item.category === 'video') {
-previewHTML = `<video src="${item.url}"></video>`;
+previewHTML = `<video src="${playableUrl}#t=0.5" preload="metadata" muted></video>`;
 } else if (item.category === 'audio') {
 previewHTML = `
 <div class="audio-preview">
@@ -919,12 +931,14 @@ renderGrid();
 };
 
 window.handleSingleTap = function(item) {
+const playableUrl = getOptimizedMediaUrl(item.url, item.category);
+
 if (item.category === 'text') {
 openNoteEditor(item);
 } else if (item.category === 'image') {
 openModal(`<img src="${item.url}" style="max-width:100%; max-height:60vh;">`, item.name, item);
 } else if (item.category === 'video') {
-openModal(`<video src="${item.url}" controls autoplay style="max-width:100%; max-height:60vh;"></video>`, item.name, item);
+openModal(`<video src="${playableUrl}" controls autoplay style="max-width:100%; max-height:60vh;"></video>`, item.name, item);
 }
 };
 
@@ -977,4 +991,4 @@ document.getElementById('media-modal').style.display = 'none';
 };
 </script>
 </body>
-  </html>
+</html>
