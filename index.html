@@ -272,7 +272,7 @@ font-weight: bold;
 .preview-box {
 width: 100%;
 height: 110px;
-background-color: #f0f0f0;
+background-color: #1a1a1a;
 border-radius: 6px;
 display: flex;
 flex-direction: column;
@@ -284,11 +284,34 @@ font-size: 30px;
 position: relative;
 }
 
-.preview-box img, .preview-box video {
+.preview-box img {
 width: 100%;
 height: 100%;
 object-fit: cover;
 pointer-events: none;
+}
+
+.video-thumb-container {
+width: 100%;
+height: 100%;
+display: flex;
+align-items: center;
+justify-content: center;
+background: #2c3e50;
+color: white;
+position: relative;
+}
+
+.play-icon {
+font-size: 28px;
+background: rgba(0, 0, 0, 0.5);
+width: 44px;
+height: 44px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+border: 2px solid white;
 }
 
 .audio-preview {
@@ -543,11 +566,9 @@ margin-top: 50px;
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Standard Credentials
 const DEFAULT_USERNAME = "RONOCK";
 const DEFAULT_PASSWORD = "@Ronock.268841";
 
-// Cloudinary Config
 const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
 const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
 
@@ -615,17 +636,17 @@ window.isSelectionMode = false;
 window.holdTimer = null;
 window.editingNoteDocId = null;
 
-// Helper to get play-compatible web URL for High Quality MOV & MP4 videos
 function getOptimizedMediaUrl(url, category) {
 if (!url) return '';
 if (category === 'video' && url.includes('/upload/')) {
-// Cloudinary Dynamic Transcoding (Convert MOV/HEVC to web-friendly MP4 with full high quality)
 return url.replace('/upload/', '/upload/f_auto,q_auto/');
+}
+if (category === 'image' && url.includes('/upload/')) {
+return url.replace('/upload/', '/upload/w_300,c_scale,q_auto,f_auto/');
 }
 return url;
 }
 
-// Single File Upload Helper (Promise-based)
 function uploadSingleFile(file, fileIndex, totalFiles) {
 return new Promise((resolve, reject) => {
 let fileCategory = 'text';
@@ -662,7 +683,6 @@ xhr.onload = async () => {
 if (xhr.status === 200) {
 const res = JSON.parse(xhr.responseText);
 
-// STRICT DUPLICATE CHECK: Exact Name AND Exact Size match
 const existingItem = window.vaultItems.find(item => 
   item.name === file.name && item.fileSize === file.size
 );
@@ -702,7 +722,6 @@ xhr.send(formData);
 });
 }
 
-// Sequential Import (One by One Upload)
 window.handleMultipleImport = async function(event) {
 const files = event.target.files;
 if (!files || files.length === 0 || !memoriesRef) return;
@@ -728,7 +747,6 @@ console.error(`Error uploading ${fileArray[i].name}:`, err);
 document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
 event.target.value = '';
 
-// Summary Alert Popup
 alert(`Upload Finished!\n✅ ${newCount} New files uploaded\n🔄 ${overwrittenCount} Files updated/overwritten`);
 };
 
@@ -836,18 +854,20 @@ const card = document.createElement('div');
 const isSelected = window.selectedItemIds.includes(item.id);
 card.className = `card ${isSelected ? 'selected' : ''}`;
 
-const playableUrl = getOptimizedMediaUrl(item.url, item.category);
-
 let previewHTML = '';
 if (item.category === 'image') {
-previewHTML = `<img src="${item.url}">`;
+const thumbUrl = getOptimizedMediaUrl(item.url, 'image');
+previewHTML = `<img src="${thumbUrl}" loading="lazy">`;
 } else if (item.category === 'video') {
-previewHTML = `<video src="${playableUrl}#t=0.5" preload="metadata" muted></video>`;
+previewHTML = `
+<div class="video-thumb-container">
+<div class="play-icon">▶</div>
+</div>`;
 } else if (item.category === 'audio') {
 previewHTML = `
 <div class="audio-preview">
 <span style="font-size:24px;">🎙</span>
-<audio src="${item.url}" controls onclick="event.stopPropagation()"></audio>
+<audio src="${item.url}" controls preload="none" onclick="event.stopPropagation()"></audio>
 </div>`;
 } else {
 const textPreview = item.textContent ? item.textContent : 'Text Document';
