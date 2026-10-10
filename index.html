@@ -383,6 +383,110 @@ padding: 2px;
 color: #3498db;
 }
 
+/* --- Samsung Gallery Full-Screen Viewer Styles --- */
+.gallery-modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: #000000;
+z-index: 2000;
+flex-direction: column;
+justify-content: space-between;
+}
+
+.gallery-top-bar {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 12px 16px;
+background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
+color: white;
+z-index: 10;
+}
+
+.gallery-back-btn {
+background: none;
+border: none;
+color: white;
+font-size: 24px;
+cursor: pointer;
+padding: 4px 8px;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.gallery-title {
+font-size: 14px;
+max-width: 60%;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+font-weight: 500;
+}
+
+.gallery-dl-btn {
+background: none;
+border: none;
+color: white;
+font-size: 20px;
+cursor: pointer;
+padding: 4px;
+}
+
+.gallery-viewer-body {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+position: relative;
+overflow: hidden;
+width: 100%;
+height: 100%;
+}
+
+.gallery-viewer-body img, 
+.gallery-viewer-body video {
+max-width: 100%;
+max-height: 100%;
+object-fit: contain;
+}
+
+.gallery-nav-btn {
+position: absolute;
+top: 50%;
+transform: translateY(-50%);
+background: rgba(255, 255, 255, 0.2);
+color: white;
+border: none;
+width: 45px;
+height: 45px;
+border-radius: 50%;
+font-size: 20px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 5;
+transition: background 0.2s;
+}
+
+.gallery-nav-btn:hover {
+background: rgba(255, 255, 255, 0.4);
+}
+
+.gallery-prev {
+left: 15px;
+}
+
+.gallery-next {
+right: 15px;
+}
+
+/* Note Pad Modal */
 .modal {
 display: none;
 position: fixed;
@@ -394,37 +498,6 @@ background: rgba(0, 0, 0, 0.85);
 z-index: 1000;
 justify-content: center;
 align-items: center;
-}
-
-.modal-content {
-background: white;
-width: 90%;
-max-width: 500px;
-border-radius: 8px;
-padding: 15px;
-position: relative;
-}
-
-.modal-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 12px;
-border-bottom: 1px solid #ddd;
-padding-bottom: 8px;
-}
-
-.close-btn {
-font-size: 22px;
-font-weight: bold;
-cursor: pointer;
-margin-left: 10px;
-}
-
-.modal-body {
-text-align: center;
-max-height: 70vh;
-overflow-y: auto;
 }
 
 .note-modal-content {
@@ -542,17 +615,17 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Standard Media Modal -->
-<div id="media-modal" class="modal" onclick="closeModal()">
-<div class="modal-content" onclick="event.stopPropagation()">
-<div class="modal-header">
-<h4 id="modal-title" style="font-size: 14px;">File View</h4>
-<div>
-<button id="modal-dl-btn" class="btn btn-download">Save</button>
-<span class="close-btn" onclick="closeModal()">×</span>
+<!-- Full-Screen Samsung Gallery Viewer Modal -->
+<div id="gallery-modal" class="gallery-modal">
+<div class="gallery-top-bar">
+<button class="gallery-back-btn" onclick="closeGalleryModal()">⬅</button>
+<div id="gallery-title" class="gallery-title">FileName</div>
+<button class="gallery-dl-btn" onclick="downloadCurrentGalleryItem()" title="Download">💾</button>
 </div>
-</div>
-<div id="modal-body"></div>
+<div class="gallery-viewer-body" id="gallery-viewer-body">
+<button class="gallery-nav-btn gallery-prev" onclick="plusGalleryIndex(-1)">❮</button>
+<div id="gallery-content-area" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
+<button class="gallery-nav-btn gallery-next" onclick="plusGalleryIndex(1)">❯</button>
 </div>
 </div>
 
@@ -647,6 +720,10 @@ window.isSelectionMode = false;
 window.holdTimer = null;
 window.editingNoteDocId = null;
 
+// Gallery Navigation States
+window.currentGalleryList = [];
+window.currentGalleryIndex = 0;
+
 function getOptimizedMediaUrl(url, category) {
 if (!url) return '';
 if (category === 'video' && url.includes('/upload/')) {
@@ -658,13 +735,12 @@ return url.replace('/upload/', '/upload/w_300,c_scale,q_auto,f_auto/');
 return url;
 }
 
-// Helper to generate dynamic image thumbnail from video URL using Cloudinary extension trick (.jpg)
+let lastIndex = -1;
+
 function getVideoThumbnailUrl(url) {
 if (!url) return '';
 if (url.includes('/upload/')) {
-// Replaces video extension with .jpg and extracts the first frame preview
 let thumb = url.replace('/upload/', '/upload/w_300,c_fill,so_0,f_jpg,q_auto/');
-// Replace video extension like .mp4, .mov, .MOV with .jpg
 lastIndex = thumb.lastIndexOf('.');
 if (lastIndex !== -1) {
 thumb = thumb.substring(0, lastIndex) + '.jpg';
@@ -673,8 +749,6 @@ return thumb;
 }
 return url;
 }
-
-let lastIndex = -1;
 
 function uploadSingleFile(file, fileIndex, totalFiles) {
 return new Promise((resolve, reject) => {
@@ -939,7 +1013,7 @@ if (e.target.classList.contains('rename-icon')) return;
 if (window.isSelectionMode) {
 toggleSelectItem(item.id);
 } else if (item.category !== 'audio') {
-handleSingleTap(item);
+openGalleryModal(filteredItems, item);
 }
 });
 
@@ -981,17 +1055,98 @@ window.selectedItemIds = [];
 renderGrid();
 };
 
-window.handleSingleTap = function(item) {
-const playableUrl = getOptimizedMediaUrl(item.url, item.category);
+// --- Full Screen Samsung Gallery Modal Logic ---
+window.openGalleryModal = function(itemList, selectedItem) {
+window.currentGalleryList = itemList.filter(i => i.category === 'image' || i.category === 'video' || i.category === 'text');
+window.currentGalleryIndex = window.currentGalleryList.findIndex(i => i.id === selectedItem.id);
+if(window.currentGalleryIndex === -1) window.currentGalleryIndex = 0;
 
-if (item.category === 'text') {
-openNoteEditor(item);
-} else if (item.category === 'image') {
-openModal(`<img src="${item.url}" style="max-width:100%; max-height:60vh;">`, item.name, item);
-} else if (item.category === 'video') {
-openModal(`<video src="${playableUrl}" controls autoplay style="max-width:100%; max-height:60vh;"></video>`, item.name, item);
+document.getElementById('gallery-modal').style.display = 'flex';
+renderGalleryItem();
+history.pushState({ galleryOpen: true }, "");
+};
+
+window.closeGalleryModal = function() {
+const modal = document.getElementById('gallery-modal');
+if (modal.style.display === 'flex') {
+modal.style.display = 'none';
+// Pause any active playing videos
+const video = document.getElementById('gallery-content-area').querySelector('video');
+if(video) video.pause();
 }
 };
+
+window.plusGalleryIndex = function(n) {
+window.currentGalleryIndex += n;
+if (window.currentGalleryIndex >= window.currentGalleryList.length) {
+window.currentGalleryIndex = 0; // Loop back to start
+} else if (window.currentGalleryIndex < 0) {
+window.currentGalleryIndex = window.currentGalleryList.length - 1; // Loop to end
+}
+renderGalleryItem();
+};
+
+window.renderGalleryItem = function() {
+if (window.currentGalleryList.length === 0) return;
+const item = window.currentGalleryList[window.currentGalleryIndex];
+document.getElementById('gallery-title').innerText = item.name;
+
+const contentArea = document.getElementById('gallery-content-area');
+const playableUrl = getOptimizedMediaUrl(item.url, item.category);
+
+if (item.category === 'image') {
+contentArea.innerHTML = `<img src="${item.url}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
+} else if (item.category === 'video') {
+contentArea.innerHTML = `<video src="${playableUrl}" controls autoplay style="max-width:100%; max-height:100%; object-fit:contain;"></video>`;
+} else if (item.category === 'text') {
+contentArea.innerHTML = `<div style="background:#fffbf0; color:#333; padding:20px; border-radius:8px; max-width:80%; max-height:80%; overflow-y:auto; text-align:left; font-size:16px; line-height:1.6;"><h3>${item.name}</h3><hr style="margin:10px 0;"><p>${item.textContent || ''}</p></div>`;
+}
+};
+
+window.downloadCurrentGalleryItem = function() {
+const item = window.currentGalleryList[window.currentGalleryIndex];
+if (item && item.url) {
+downloadSingleItem(item);
+} else if (item && item.category === 'text') {
+// Download note as text file
+const blob = new Blob([item.textContent], { type: 'text/plain' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = item.name;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+}
+};
+
+// Handle Mobile Back Button Hardware Press for Gallery Close
+window.addEventListener('popstate', (event) => {
+closeGalleryModal();
+});
+
+// Touch Swipe Support for Gallery
+let touchstartX = 0;
+let touchendX = 0;
+
+const galleryBody = document.getElementById('gallery-viewer-body');
+galleryBody.addEventListener('touchstart', e => {
+touchstartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+galleryBody.addEventListener('touchend', e => {
+touchendX = e.changedTouches[0].screenX;
+handleSwipeGesture();
+}, { passive: true });
+
+function handleSwipeGesture() {
+if (touchendX < touchstartX - 50) {
+plusGalleryIndex(1); // Swipe Left -> Next
+}
+if (touchendX > touchstartX + 50) {
+plusGalleryIndex(-1); // Swipe Right -> Prev
+}
+}
 
 window.downloadSingleItem = function(item) {
 const a = document.createElement('a');
@@ -1022,23 +1177,6 @@ countText.innerText = `Selected: ${window.selectedItemIds.length}`;
 normalActions.style.display = 'block';
 selectionActions.style.display = 'none';
 }
-};
-
-window.openModal = function(contentHTML, title, item) {
-document.getElementById('modal-title').innerText = title;
-const dlBtn = document.getElementById('modal-dl-btn');
-dlBtn.onclick = () => downloadSingleItem(item);
-
-document.getElementById('modal-body').innerHTML = contentHTML;
-document.getElementById('media-modal').style.display = 'flex';
-};
-
-window.closeModal = function() {
-const modalBody = document.getElementById('modal-body');
-const video = modalBody.querySelector('video');
-if (video) video.pause();
-
-document.getElementById('media-modal').style.display = 'none';
 };
 </script>
 </body>
