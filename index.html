@@ -141,9 +141,9 @@ padding: 10px 5px;
 .menu-item {
 color: white;
 text-decoration: none;
-padding: 8px 16px;
+padding: 8px 14px;
 white-space: nowrap;
-font-size: 14px;
+font-size: 13px;
 border-radius: 4px;
 margin-right: 5px;
 cursor: pointer;
@@ -269,6 +269,22 @@ font-size: 14px;
 font-weight: bold;
 }
 
+/* Star Favorite Button on Grid Card */
+.star-btn {
+position: absolute;
+top: 10px;
+right: 10px;
+font-size: 18px;
+z-index: 6;
+color: rgba(255, 255, 255, 0.7);
+text-shadow: 0 0 3px rgba(0,0,0,0.8);
+cursor: pointer;
+}
+
+.star-btn.active {
+color: #f1c40f;
+}
+
 .preview-box {
 width: 100%;
 height: 110px;
@@ -383,7 +399,7 @@ padding: 2px;
 color: #3498db;
 }
 
-/* --- Samsung Gallery Full-Screen Viewer Styles --- */
+/* Full-Screen Samsung Gallery Viewer Styles */
 .gallery-modal {
 display: none;
 position: fixed;
@@ -421,14 +437,20 @@ justify-content: center;
 
 .gallery-title {
 font-size: 14px;
-max-width: 60%;
+max-width: 50%;
 overflow: hidden;
 text-overflow: ellipsis;
 white-space: nowrap;
 font-weight: 500;
 }
 
-.gallery-dl-btn {
+.gallery-right-actions {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+
+.gallery-action-btn {
 background: none;
 border: none;
 color: white;
@@ -486,7 +508,7 @@ left: 15px;
 right: 15px;
 }
 
-/* Note Pad Modal */
+/* Modal Popup General */
 .modal {
 display: none;
 position: fixed;
@@ -495,9 +517,52 @@ left: 0;
 width: 100%;
 height: 100%;
 background: rgba(0, 0, 0, 0.85);
-z-index: 1000;
+z-index: 2500;
 justify-content: center;
 align-items: center;
+}
+
+.modal-content-box {
+background: white;
+border-radius: 12px;
+padding: 20px;
+width: 90%;
+max-width: 400px;
+text-align: center;
+position: relative;
+box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.modal-content-box h3 {
+margin-bottom: 12px;
+color: #2c3e50;
+font-size: 18px;
+}
+
+.modal-content-box p {
+font-size: 13px;
+color: #7f8c8d;
+margin-bottom: 15px;
+line-height: 1.5;
+}
+
+.info-details-list {
+text-align: left;
+font-size: 13px;
+color: #333;
+background: #f8f9fa;
+padding: 12px;
+border-radius: 8px;
+margin-bottom: 15px;
+word-break: break-all;
+}
+
+.info-details-list div {
+margin-bottom: 8px;
+}
+
+.info-details-list strong {
+color: #1abc9c;
 }
 
 .note-modal-content {
@@ -586,6 +651,8 @@ margin-top: 50px;
 <div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
 <div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
 <div class="menu-item" onclick="switchCategory('video', this)">Video</div>
+<div class="menu-item" onclick="switchCategory('favorite', this)">⭐ Favorite</div>
+<div class="menu-item" onclick="switchCategory('secret', this)">🔑 Secret</div>
 <div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
 <div class="menu-item" onclick="switchCategory('text', this)">Text</div>
 </div>
@@ -620,12 +687,37 @@ margin-top: 50px;
 <div class="gallery-top-bar">
 <button class="gallery-back-btn" onclick="closeGalleryModal()">⬅</button>
 <div id="gallery-title" class="gallery-title">FileName</div>
-<button class="gallery-dl-btn" onclick="downloadCurrentGalleryItem()" title="Download">💾</button>
+<div class="gallery-right-actions">
+<button class="gallery-action-btn" onclick="showMediaDetails()" title="Info">ℹ️</button>
+<button class="gallery-action-btn" onclick="downloadCurrentGalleryItem()" title="Download">💾</button>
+</div>
 </div>
 <div class="gallery-viewer-body" id="gallery-viewer-body">
 <button class="gallery-nav-btn gallery-prev" onclick="plusGalleryIndex(-1)">❮</button>
 <div id="gallery-content-area" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
 <button class="gallery-nav-btn gallery-next" onclick="plusGalleryIndex(1)">❯</button>
+</div>
+</div>
+
+<!-- Media Details (Info ℹ️) Modal -->
+<div id="info-modal" class="modal" onclick="closeInfoModal()">
+<div class="modal-content-box" onclick="event.stopPropagation()">
+<h3>Media Details ℹ️</h3>
+<div id="info-details-content" class="info-details-list"></div>
+<button class="btn btn-import" style="width: 100%;" onclick="closeInfoModal()">Close</button>
+</div>
+</div>
+
+<!-- Secret Pin Lock Modal -->
+<div id="pin-modal" class="modal">
+<div class="modal-content-box">
+<h3 id="pin-modal-title">Enter Secret PIN 🔑</h3>
+<p id="pin-modal-desc">Access protected vault items</p>
+<input type="password" id="secret-pin-input" class="input-field" maxlength="4" placeholder="4-Digit PIN" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
+<div style="display: flex; gap: 10px;">
+<button class="btn btn-cancel" style="flex:1;" onclick="cancelPinPrompt()">Cancel</button>
+<button class="btn btn-import" style="flex:1;" onclick="verifySecretPin()">Unlock</button>
+</div>
 </div>
 </div>
 
@@ -636,7 +728,7 @@ margin-top: 50px;
 <span style="font-weight: bold; color: #84817a; font-size: 14px;">Samsung Note Pad</span>
 <div>
 <button class="btn btn-import" onclick="saveNote()">Save Note</button>
-<span class="close-btn" onclick="closeNoteModal()">×</span>
+<span class="close-btn" style="font-size:22px; cursor:pointer; margin-left:10px;" onclick="closeNoteModal()">×</span>
 </div>
 </div>
 <div class="note-modal-body">
@@ -670,6 +762,7 @@ document.getElementById('login-error').style.display = 'block';
 
 window.handleLogout = function() {
 sessionStorage.removeItem('ronock_active_session');
+sessionStorage.removeItem('secret_unlocked');
 location.reload();
 };
 
@@ -810,6 +903,8 @@ publicId: res.public_id,
 type: file.type,
 fileSize: file.size || 0,
 category: fileCategory,
+isFavorite: false,
+isSecret: window.currentCategory === 'secret',
 textContent: '',
 createdAt: new Date().toISOString()
 });
@@ -872,6 +967,8 @@ name: title.endsWith('.txt') ? title : title + '.txt',
 url: '',
 type: 'text/plain',
 category: 'text',
+isFavorite: false,
+isSecret: window.currentCategory === 'secret',
 textContent: content,
 createdAt: new Date().toISOString()
 });
@@ -879,6 +976,16 @@ createdAt: new Date().toISOString()
 closeNoteModal();
 } catch(err) {
 alert("Failed to save note: " + err.message);
+}
+};
+
+window.toggleFavorite = async function(event, docId, currentStatus) {
+event.stopPropagation();
+try {
+const docRef = doc(db, "memories", docId);
+await updateDoc(docRef, { isFavorite: !currentStatus });
+} catch(err) {
+console.error("Favorite toggle failed:", err);
 }
 };
 
@@ -896,10 +1003,7 @@ alert("Failed to rename: " + err.message);
 };
 
 window.selectAllItems = function() {
-const filteredItems = window.currentCategory === 'all'
-? window.vaultItems
-: window.vaultItems.filter(item => item.category === window.currentCategory);
-
+const filteredItems = getFilteredItems();
 window.selectedItemIds = filteredItems.map(item => item.id);
 renderGrid();
 };
@@ -917,13 +1021,22 @@ window.isSelectionMode = false;
 renderGrid();
 };
 
+// --- Secret PIN Lock Logic ---
+let pendingCategoryElement = null;
+
 window.switchCategory = function(category, element) {
+if (category === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
+pendingCategoryElement = element;
+openPinPrompt();
+return;
+}
+
 window.currentCategory = category;
 document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
 element.classList.add('active');
 
 const createNoteBtn = document.getElementById('create-note-btn');
-if (category === 'text') {
+if (category === 'text' || category === 'secret') {
 createNoteBtn.style.display = 'inline-block';
 } else {
 createNoteBtn.style.display = 'none';
@@ -931,6 +1044,63 @@ createNoteBtn.style.display = 'none';
 
 renderGrid();
 };
+
+function openPinPrompt() {
+const savedPin = localStorage.getItem('ronock_secret_pin');
+const title = document.getElementById('pin-modal-title');
+const desc = document.getElementById('pin-modal-desc');
+
+if (!savedPin) {
+title.innerText = "Set 4-Digit Secret PIN 🔑";
+desc.innerText = "Create a PIN to protect your secret files";
+} else {
+title.innerText = "Enter Secret PIN 🔑";
+desc.innerText = "Access protected vault items";
+}
+document.getElementById('secret-pin-input').value = '';
+document.getElementById('pin-modal').style.display = 'flex';
+}
+
+window.cancelPinPrompt = function() {
+document.getElementById('pin-modal').style.display = 'none';
+};
+
+window.verifySecretPin = function() {
+const pinInput = document.getElementById('secret-pin-input').value.trim();
+const savedPin = localStorage.getItem('ronock_secret_pin');
+
+if (pinInput.length !== 4 || isNaN(pinInput)) {
+alert("Please enter a valid 4-digit number PIN!");
+return;
+}
+
+if (!savedPin) {
+localStorage.setItem('ronock_secret_pin', pinInput);
+alert("PIN created successfully!");
+sessionStorage.setItem('secret_unlocked', 'true');
+document.getElementById('pin-modal').style.display = 'none';
+window.switchCategory('secret', pendingCategoryElement);
+} else if (pinInput === savedPin) {
+sessionStorage.setItem('secret_unlocked', 'true');
+document.getElementById('pin-modal').style.display = 'none';
+window.switchCategory('secret', pendingCategoryElement);
+} else {
+alert("Incorrect PIN!");
+document.getElementById('secret-pin-input').value = '';
+}
+};
+
+function getFilteredItems() {
+if (window.currentCategory === 'favorite') {
+return window.vaultItems.filter(item => item.isFavorite && !item.isSecret);
+} else if (window.currentCategory === 'secret') {
+return window.vaultItems.filter(item => item.isSecret);
+} else if (window.currentCategory === 'all') {
+return window.vaultItems.filter(item => !item.isSecret);
+} else {
+return window.vaultItems.filter(item => item.category === window.currentCategory && !item.isSecret);
+}
+}
 
 window.renderGrid = function() {
 const grid = document.getElementById('media-grid');
@@ -942,9 +1112,7 @@ grid.classList.add('selection-mode');
 grid.classList.remove('selection-mode');
 }
 
-const filteredItems = window.currentCategory === 'all'
-? window.vaultItems
-: window.vaultItems.filter(item => item.category === window.currentCategory);
+const filteredItems = getFilteredItems();
 
 if(filteredItems.length === 0) {
 grid.innerHTML = `<div class="loader">No items in ${window.currentCategory} category yet.</div>`;
@@ -979,8 +1147,11 @@ const textPreview = item.textContent ? item.textContent : 'Text Document';
 previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
 }
 
+const isFav = item.isFavorite ? 'active' : '';
+
 card.innerHTML = `
 <div class="checkbox-circle"></div>
+<span class="star-btn ${isFav}" onclick="toggleFavorite(event, '${item.docId}', ${!!item.isFavorite})">★</span>
 <div class="preview-box">${previewHTML}</div>
 <div class="card-title-container">
 <div class="card-title">${item.name}</div>
@@ -1009,7 +1180,7 @@ card.addEventListener('mouseup', clearHold);
 card.addEventListener('mouseleave', clearHold);
 
 card.addEventListener('click', (e) => {
-if (e.target.classList.contains('rename-icon')) return;
+if (e.target.classList.contains('rename-icon') || e.target.classList.contains('star-btn')) return;
 if (window.isSelectionMode) {
 toggleSelectItem(item.id);
 } else if (item.category !== 'audio') {
@@ -1070,7 +1241,6 @@ window.closeGalleryModal = function() {
 const modal = document.getElementById('gallery-modal');
 if (modal.style.display === 'flex') {
 modal.style.display = 'none';
-// Pause any active playing videos
 const video = document.getElementById('gallery-content-area').querySelector('video');
 if(video) video.pause();
 }
@@ -1079,9 +1249,9 @@ if(video) video.pause();
 window.plusGalleryIndex = function(n) {
 window.currentGalleryIndex += n;
 if (window.currentGalleryIndex >= window.currentGalleryList.length) {
-window.currentGalleryIndex = 0; // Loop back to start
+window.currentGalleryIndex = 0;
 } else if (window.currentGalleryIndex < 0) {
-window.currentGalleryIndex = window.currentGalleryList.length - 1; // Loop to end
+window.currentGalleryIndex = window.currentGalleryList.length - 1;
 }
 renderGalleryItem();
 };
@@ -1103,12 +1273,46 @@ contentArea.innerHTML = `<div style="background:#fffbf0; color:#333; padding:20p
 }
 };
 
+// --- Media Details (Info ℹ️) Logic ---
+window.showMediaDetails = function() {
+const item = window.currentGalleryList[window.currentGalleryIndex];
+if (!item) return;
+
+let formattedSize = "Unknown";
+if (item.fileSize) {
+const bytes = item.fileSize;
+if (bytes >= 1048576) formattedSize = (bytes / 1048576).toFixed(2) + " MB";
+else if (bytes >= 1024) formattedSize = (bytes / 1024).toFixed(2) + " KB";
+else formattedSize = bytes + " Bytes";
+}
+
+let uploadDate = "N/A";
+if (item.createdAt) {
+uploadDate = new Date(item.createdAt).toLocaleString();
+}
+
+const infoHTML = `
+<div><strong>File Name:</strong> ${item.name}</div>
+<div><strong>Category:</strong> ${item.category.toUpperCase()}</div>
+<div><strong>File Size:</strong> ${formattedSize}</div>
+<div><strong>MIME Type:</strong> ${item.type || 'N/A'}</div>
+<div><strong>Upload Date:</strong> ${uploadDate}</div>
+<div><strong>Favorite:</strong> ${item.isFavorite ? 'Yes ⭐' : 'No'}</div>
+`;
+
+document.getElementById('info-details-content').innerHTML = infoHTML;
+document.getElementById('info-modal').style.display = 'flex';
+};
+
+window.closeInfoModal = function() {
+document.getElementById('info-modal').style.display = 'none';
+};
+
 window.downloadCurrentGalleryItem = function() {
 const item = window.currentGalleryList[window.currentGalleryIndex];
 if (item && item.url) {
 downloadSingleItem(item);
 } else if (item && item.category === 'text') {
-// Download note as text file
 const blob = new Blob([item.textContent], { type: 'text/plain' });
 const url = URL.createObjectURL(blob);
 const a = document.createElement('a');
@@ -1120,9 +1324,10 @@ document.body.removeChild(a);
 }
 };
 
-// Handle Mobile Back Button Hardware Press for Gallery Close
+// Handle Mobile Back Button Hardware Press
 window.addEventListener('popstate', (event) => {
 closeGalleryModal();
+closeInfoModal();
 });
 
 // Touch Swipe Support for Gallery
@@ -1141,10 +1346,10 @@ handleSwipeGesture();
 
 function handleSwipeGesture() {
 if (touchendX < touchstartX - 50) {
-plusGalleryIndex(1); // Swipe Left -> Next
+plusGalleryIndex(1);
 }
 if (touchendX > touchstartX + 50) {
-plusGalleryIndex(-1); // Swipe Right -> Prev
+plusGalleryIndex(-1);
 }
 }
 
@@ -1180,4 +1385,4 @@ selectionActions.style.display = 'none';
 };
 </script>
 </body>
-</html>
+  </html>
