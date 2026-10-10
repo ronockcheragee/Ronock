@@ -136,6 +136,7 @@ background-color: #16a085;
 display: flex;
 overflow-x: auto;
 padding: 10px 5px;
+align-items: center;
 }
 
 .menu-item {
@@ -210,6 +211,13 @@ color: white;
 margin-left: 5px;
 }
 
+.btn-secret-action {
+background-color: #8e44ad;
+color: white;
+margin-left: 5px;
+display: none;
+}
+
 .main-container {
 padding: 15px;
 flex: 1;
@@ -267,22 +275,6 @@ content: '✓';
 color: white;
 font-size: 14px;
 font-weight: bold;
-}
-
-/* Star Favorite Button on Grid Card */
-.star-btn {
-position: absolute;
-top: 10px;
-right: 10px;
-font-size: 18px;
-z-index: 6;
-color: rgba(255, 255, 255, 0.7);
-text-shadow: 0 0 3px rgba(0,0,0,0.8);
-cursor: pointer;
-}
-
-.star-btn.active {
-color: #f1c40f;
 }
 
 .preview-box {
@@ -651,10 +643,9 @@ margin-top: 50px;
 <div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
 <div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
 <div class="menu-item" onclick="switchCategory('video', this)">Video</div>
-<div class="menu-item" onclick="switchCategory('favorite', this)">⭐ Favorite</div>
-<div class="menu-item" onclick="switchCategory('secret', this)">🔑 Secret</div>
 <div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
 <div class="menu-item" onclick="switchCategory('text', this)">Text</div>
+<div class="menu-item" onclick="switchCategory('secret', this)">🔑 Secret</div>
 </div>
 
 <div class="action-bar">
@@ -668,6 +659,7 @@ margin-top: 50px;
 <span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
 <div style="float: right;">
 <button class="btn btn-select-all" onclick="selectAllItems()">Select All</button>
+<button class="btn btn-secret-action" id="moveToSecretBtn" onclick="toggleSelectedSecretStatus()">Make Secret</button>
 <button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
 <button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
 <button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
@@ -708,11 +700,11 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Secret Pin Lock Modal -->
+<!-- Secret PIN Prompt Modal -->
 <div id="pin-modal" class="modal">
 <div class="modal-content-box">
-<h3 id="pin-modal-title">Enter Secret PIN 🔑</h3>
-<p id="pin-modal-desc">Access protected vault items</p>
+<h3>Enter Secret PIN 🔑</h3>
+<p>Access protected vault items</p>
 <input type="password" id="secret-pin-input" class="input-field" maxlength="4" placeholder="4-Digit PIN" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
 <div style="display: flex; gap: 10px;">
 <button class="btn btn-cancel" style="flex:1;" onclick="cancelPinPrompt()">Cancel</button>
@@ -744,6 +736,9 @@ import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc
 
 const DEFAULT_USERNAME = "RONOCK";
 const DEFAULT_PASSWORD = "@Ronock.268841";
+
+// Hardcoded Secret PIN (Change this PIN whenever you want)
+const DEFAULT_SECRET_PIN = "2688"; 
 
 const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
 const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
@@ -813,7 +808,6 @@ window.isSelectionMode = false;
 window.holdTimer = null;
 window.editingNoteDocId = null;
 
-// Gallery Navigation States
 window.currentGalleryList = [];
 window.currentGalleryIndex = 0;
 
@@ -903,7 +897,6 @@ publicId: res.public_id,
 type: file.type,
 fileSize: file.size || 0,
 category: fileCategory,
-isFavorite: false,
 isSecret: window.currentCategory === 'secret',
 textContent: '',
 createdAt: new Date().toISOString()
@@ -967,7 +960,6 @@ name: title.endsWith('.txt') ? title : title + '.txt',
 url: '',
 type: 'text/plain',
 category: 'text',
-isFavorite: false,
 isSecret: window.currentCategory === 'secret',
 textContent: content,
 createdAt: new Date().toISOString()
@@ -976,16 +968,6 @@ createdAt: new Date().toISOString()
 closeNoteModal();
 } catch(err) {
 alert("Failed to save note: " + err.message);
-}
-};
-
-window.toggleFavorite = async function(event, docId, currentStatus) {
-event.stopPropagation();
-try {
-const docRef = doc(db, "memories", docId);
-await updateDoc(docRef, { isFavorite: !currentStatus });
-} catch(err) {
-console.error("Favorite toggle failed:", err);
 }
 };
 
@@ -1021,7 +1003,7 @@ window.isSelectionMode = false;
 renderGrid();
 };
 
-// --- Secret PIN Lock Logic ---
+// --- Secret PIN Lock & Management Logic ---
 let pendingCategoryElement = null;
 
 window.switchCategory = function(category, element) {
@@ -1036,6 +1018,7 @@ document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('a
 element.classList.add('active');
 
 const createNoteBtn = document.getElementById('create-note-btn');
+
 if (category === 'text' || category === 'secret') {
 createNoteBtn.style.display = 'inline-block';
 } else {
@@ -1046,17 +1029,6 @@ renderGrid();
 };
 
 function openPinPrompt() {
-const savedPin = localStorage.getItem('ronock_secret_pin');
-const title = document.getElementById('pin-modal-title');
-const desc = document.getElementById('pin-modal-desc');
-
-if (!savedPin) {
-title.innerText = "Set 4-Digit Secret PIN 🔑";
-desc.innerText = "Create a PIN to protect your secret files";
-} else {
-title.innerText = "Enter Secret PIN 🔑";
-desc.innerText = "Access protected vault items";
-}
 document.getElementById('secret-pin-input').value = '';
 document.getElementById('pin-modal').style.display = 'flex';
 }
@@ -1067,20 +1039,8 @@ document.getElementById('pin-modal').style.display = 'none';
 
 window.verifySecretPin = function() {
 const pinInput = document.getElementById('secret-pin-input').value.trim();
-const savedPin = localStorage.getItem('ronock_secret_pin');
 
-if (pinInput.length !== 4 || isNaN(pinInput)) {
-alert("Please enter a valid 4-digit number PIN!");
-return;
-}
-
-if (!savedPin) {
-localStorage.setItem('ronock_secret_pin', pinInput);
-alert("PIN created successfully!");
-sessionStorage.setItem('secret_unlocked', 'true');
-document.getElementById('pin-modal').style.display = 'none';
-window.switchCategory('secret', pendingCategoryElement);
-} else if (pinInput === savedPin) {
+if (pinInput === DEFAULT_SECRET_PIN) {
 sessionStorage.setItem('secret_unlocked', 'true');
 document.getElementById('pin-modal').style.display = 'none';
 window.switchCategory('secret', pendingCategoryElement);
@@ -1090,10 +1050,25 @@ document.getElementById('secret-pin-input').value = '';
 }
 };
 
+window.toggleSelectedSecretStatus = async function() {
+if (!db || window.selectedItemIds.length === 0) return;
+const targetSecretState = window.currentCategory !== 'secret';
+
+const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
+for (const item of selectedDocs) {
+if (item.docId) {
+const docRef = doc(db, "memories", item.docId);
+await updateDoc(docRef, { isSecret: targetSecretState });
+}
+}
+window.selectedItemIds = [];
+window.isSelectionMode = false;
+renderGrid();
+alert(targetSecretState ? "Moved selected files to Secret Vault 🔑" : "Restored selected files to Normal Vault 📂");
+};
+
 function getFilteredItems() {
-if (window.currentCategory === 'favorite') {
-return window.vaultItems.filter(item => item.isFavorite && !item.isSecret);
-} else if (window.currentCategory === 'secret') {
+if (window.currentCategory === 'secret') {
 return window.vaultItems.filter(item => item.isSecret);
 } else if (window.currentCategory === 'all') {
 return window.vaultItems.filter(item => !item.isSecret);
@@ -1108,6 +1083,7 @@ grid.innerHTML = '';
 
 if (window.isSelectionMode) {
 grid.classList.add('selection-mode');
+document.getElementById('moveToSecretBtn').innerText = window.currentCategory === 'secret' ? 'Unsecret' : 'Make Secret';
 } else {
 grid.classList.remove('selection-mode');
 }
@@ -1147,11 +1123,8 @@ const textPreview = item.textContent ? item.textContent : 'Text Document';
 previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
 }
 
-const isFav = item.isFavorite ? 'active' : '';
-
 card.innerHTML = `
 <div class="checkbox-circle"></div>
-<span class="star-btn ${isFav}" onclick="toggleFavorite(event, '${item.docId}', ${!!item.isFavorite})">★</span>
 <div class="preview-box">${previewHTML}</div>
 <div class="card-title-container">
 <div class="card-title">${item.name}</div>
@@ -1180,7 +1153,7 @@ card.addEventListener('mouseup', clearHold);
 card.addEventListener('mouseleave', clearHold);
 
 card.addEventListener('click', (e) => {
-if (e.target.classList.contains('rename-icon') || e.target.classList.contains('star-btn')) return;
+if (e.target.classList.contains('rename-icon')) return;
 if (window.isSelectionMode) {
 toggleSelectItem(item.id);
 } else if (item.category !== 'audio') {
@@ -1297,7 +1270,7 @@ const infoHTML = `
 <div><strong>File Size:</strong> ${formattedSize}</div>
 <div><strong>MIME Type:</strong> ${item.type || 'N/A'}</div>
 <div><strong>Upload Date:</strong> ${uploadDate}</div>
-<div><strong>Favorite:</strong> ${item.isFavorite ? 'Yes ⭐' : 'No'}</div>
+<div><strong>Secret Status:</strong> ${item.isSecret ? 'Protected 🔑' : 'Normal'}</div>
 `;
 
 document.getElementById('info-details-content').innerHTML = infoHTML;
@@ -1385,4 +1358,4 @@ selectionActions.style.display = 'none';
 };
 </script>
 </body>
-  </html>
+</html>
