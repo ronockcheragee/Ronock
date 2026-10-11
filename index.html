@@ -659,7 +659,7 @@ margin-top: 50px;
 <span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
 <div style="float: right;">
 <button class="btn btn-select-all" onclick="selectAllItems()">Select All</button>
-<button class="btn btn-secret-action" id="moveToSecretBtn" onclick="toggleSelectedSecretStatus()">Make Secret</button>
+<button class="btn btn-secret-action" id="moveToSecretBtn" onclick="promptMoveToSecret()" style="display:inline-block;">Move to Secret</button>
 <button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
 <button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
 <button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
@@ -700,11 +700,11 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Secret PIN Prompt Modal -->
+<!-- Secret PIN Prompt Modal (Used for Tab Access & Moving Files) -->
 <div id="pin-modal" class="modal">
 <div class="modal-content-box">
 <h3>Enter Secret PIN 🔑</h3>
-<p>Access protected vault items</p>
+<p id="pin-modal-desc">Enter PIN to access or move protected files</p>
 <input type="password" id="secret-pin-input" class="input-field" maxlength="4" placeholder="4-Digit PIN" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
 <div style="display: flex; gap: 10px;">
 <button class="btn btn-cancel" style="flex:1;" onclick="cancelPinPrompt()">Cancel</button>
@@ -1005,10 +1005,12 @@ renderGrid();
 
 // --- Secret PIN Lock & Management Logic ---
 let pendingCategoryElement = null;
+let pendingActionType = null; // 'switch' or 'move'
 
 window.switchCategory = function(category, element) {
 if (category === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
 pendingCategoryElement = element;
+pendingActionType = 'switch';
 openPinPrompt();
 return;
 }
@@ -1035,6 +1037,7 @@ document.getElementById('pin-modal').style.display = 'flex';
 
 window.cancelPinPrompt = function() {
 document.getElementById('pin-modal').style.display = 'none';
+pendingActionType = null;
 };
 
 window.verifySecretPin = function() {
@@ -1043,14 +1046,33 @@ const pinInput = document.getElementById('secret-pin-input').value.trim();
 if (pinInput === DEFAULT_SECRET_PIN) {
 sessionStorage.setItem('secret_unlocked', 'true');
 document.getElementById('pin-modal').style.display = 'none';
+
+if (pendingActionType === 'switch') {
 window.switchCategory('secret', pendingCategoryElement);
+} else if (pendingActionType === 'move') {
+executeMoveToSecret();
+}
+pendingActionType = null;
 } else {
 alert("Incorrect PIN!");
 document.getElementById('secret-pin-input').value = '';
 }
 };
 
-window.toggleSelectedSecretStatus = async function() {
+window.promptMoveToSecret = function() {
+if (window.selectedItemIds.length === 0) return;
+
+if (window.currentCategory === 'secret') {
+// If already in secret, moving means unsecret (restore to normal) - no PIN needed
+executeMoveToSecret();
+} else {
+// Moving to secret requires PIN verification
+pendingActionType = 'move';
+openPinPrompt();
+}
+};
+
+async function executeMoveToSecret() {
 if (!db || window.selectedItemIds.length === 0) return;
 const targetSecretState = window.currentCategory !== 'secret';
 
@@ -1065,7 +1087,7 @@ window.selectedItemIds = [];
 window.isSelectionMode = false;
 renderGrid();
 alert(targetSecretState ? "Moved selected files to Secret Vault 🔑" : "Restored selected files to Normal Vault 📂");
-};
+}
 
 function getFilteredItems() {
 if (window.currentCategory === 'secret') {
@@ -1083,7 +1105,7 @@ grid.innerHTML = '';
 
 if (window.isSelectionMode) {
 grid.classList.add('selection-mode');
-document.getElementById('moveToSecretBtn').innerText = window.currentCategory === 'secret' ? 'Unsecret' : 'Make Secret';
+document.getElementById('moveToSecretBtn').innerText = window.currentCategory === 'secret' ? 'Unsecret' : 'Move to Secret';
 } else {
 grid.classList.remove('selection-mode');
 }
@@ -1358,4 +1380,4 @@ selectionActions.style.display = 'none';
 };
 </script>
 </body>
-</html>
+  </html>
