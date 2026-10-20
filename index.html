@@ -700,7 +700,7 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Secret PIN Prompt Modal (Used for Tab Access & Moving Files) -->
+<!-- Secret PIN Prompt Modal -->
 <div id="pin-modal" class="modal">
 <div class="modal-content-box">
 <h3>Enter Secret PIN 🔑</h3>
@@ -734,7 +734,7 @@ margin-top: 50px;
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const DEFAULT_USERNAME = "RONOCK CHERAGEE";
+const DEFAULT_USERNAME = "RONOCK";
 const DEFAULT_PASSWORD = "@Ronock.268841";
 
 // Hardcoded Secret PIN (Change this PIN whenever you want)
@@ -990,22 +990,58 @@ window.selectedItemIds = filteredItems.map(item => item.id);
 renderGrid();
 };
 
+// --- Automatic Cloudinary + Firebase Deletion ---
+async function deleteCloudinaryAsset(publicId, category) {
+if (!publicId) return;
+let resourceType = 'image';
+if (category === 'video' || category === 'audio') {
+resourceType = 'video';
+} else if (category === 'text') {
+resourceType = 'raw';
+}
+
+const formData = new FormData();
+formData.append('public_id', publicId);
+formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+try {
+await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/destroy`, {
+method: 'POST',
+body: formData
+});
+} catch (err) {
+console.error("Cloudinary delete failed:", err);
+}
+}
+
 window.deleteSelected = async function() {
 if(!db) return;
+if(!confirm("Are you sure you want to permanently delete selected file(s) from Vault & Cloud Storage?")) return;
+
 const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
+document.getElementById('sync-status').innerText = "Deleting Cloud Storage... ⏳";
+
 for (const item of selectedDocs) {
+// 1. Delete from Cloudinary Storage
+if (item.publicId) {
+await deleteCloudinaryAsset(item.publicId, item.category);
+}
+// 2. Delete from Firebase Database
 if (item.docId) {
 await deleteDoc(doc(db, "memories", item.docId));
 }
 }
+
 window.selectedItemIds = [];
 window.isSelectionMode = false;
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
 renderGrid();
+alert("Selected items permanently deleted from Cloudinary Storage & Vault!");
 };
 
 // --- Secret PIN Lock & Management Logic ---
 let pendingCategoryElement = null;
-let pendingActionType = null; // 'switch' or 'move'
+let pendingActionType = null;
 
 window.switchCategory = function(category, element) {
 if (category === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
@@ -1063,10 +1099,8 @@ window.promptMoveToSecret = function() {
 if (window.selectedItemIds.length === 0) return;
 
 if (window.currentCategory === 'secret') {
-// If already in secret, moving means unsecret (restore to normal) - no PIN needed
 executeMoveToSecret();
 } else {
-// Moving to secret requires PIN verification
 pendingActionType = 'move';
 openPinPrompt();
 }
