@@ -990,53 +990,19 @@ window.selectedItemIds = filteredItems.map(item => item.id);
 renderGrid();
 };
 
-// --- Automatic Cloudinary + Firebase Deletion ---
-async function deleteCloudinaryAsset(publicId, category) {
-if (!publicId) return;
-let resourceType = 'image';
-if (category === 'video' || category === 'audio') {
-resourceType = 'video';
-} else if (category === 'text') {
-resourceType = 'raw';
-}
-
-const formData = new FormData();
-formData.append('public_id', publicId);
-formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-try {
-await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/destroy`, {
-method: 'POST',
-body: formData
-});
-} catch (err) {
-console.error("Cloudinary delete failed:", err);
-}
-}
-
 window.deleteSelected = async function() {
 if(!db) return;
-if(!confirm("Are you sure you want to permanently delete selected file(s) from Vault & Cloud Storage?")) return;
+if(!confirm("Are you sure you want to delete selected file(s) from Vault?")) return;
 
 const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
-document.getElementById('sync-status').innerText = "Deleting Cloud Storage... ⏳";
-
 for (const item of selectedDocs) {
-// 1. Delete from Cloudinary Storage
-if (item.publicId) {
-await deleteCloudinaryAsset(item.publicId, item.category);
-}
-// 2. Delete from Firebase Database
 if (item.docId) {
 await deleteDoc(doc(db, "memories", item.docId));
 }
 }
-
 window.selectedItemIds = [];
 window.isSelectionMode = false;
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
 renderGrid();
-alert("Selected items permanently deleted from Cloudinary Storage & Vault!");
 };
 
 // --- Secret PIN Lock & Management Logic ---
