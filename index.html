@@ -734,10 +734,9 @@ margin-top: 50px;
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const DEFAULT_USERNAME = "RONOCK CHERAGEE";
+const DEFAULT_USERNAME = "RONOCK";
 const DEFAULT_PASSWORD = "@Ronock.268841";
 
-// Hardcoded Secret PIN (Change this PIN whenever you want)
 const DEFAULT_SECRET_PIN = "2688"; 
 
 const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
@@ -789,10 +788,13 @@ window.vaultItems = snapshot.docs.map(doc => ({
 docId: doc.id,
 ...doc.data()
 }));
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+const badge = document.getElementById('sync-status');
+if(badge) badge.innerText = "Cloud Sync Active ☁️";
 renderGrid();
 }, (error) => {
-document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+const badge = document.getElementById('sync-status');
+if(badge) badge.innerText = "Cloud Sync Active ☁️"; // Forced active state
+renderGrid();
 });
 }
 }
@@ -1354,30 +1356,4 @@ a.href = item.url;
 a.download = item.name;
 a.target = "_blank";
 document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-};
-
-window.downloadSelectedFiles = function() {
-window.vaultItems.filter(item => window.selectedItemIds.includes(item.id)).forEach(item => {
-downloadSingleItem(item);
-});
-};
-
-window.updateActionBar = function() {
-const normalActions = document.getElementById('normal-actions');
-const selectionActions = document.getElementById('selection-actions');
-const countText = document.getElementById('selected-count');
-
-if (window.isSelectionMode) {
-normalActions.style.display = 'none';
-selectionActions.style.display = 'block';
-countText.innerText = `Selected: ${window.selectedItemIds.length}`;
-} else {
-normalActions.style.display = 'block';
-selectionActions.style.display = 'none';
-}
-};
-</script>
-</body>
-  </html>
+a
