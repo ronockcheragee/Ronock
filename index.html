@@ -23,6 +23,7 @@ user-select: none;
 -webkit-user-select: none;
 }
 
+/* Strict Login Screen Styles */
 #login-screen {
 position: fixed;
 top: 0;
@@ -96,6 +97,7 @@ margin-bottom: 10px;
 display: none;
 }
 
+/* Vault Interface Styles */
 .top-header {
 background-color: #1abc9c;
 color: white;
@@ -389,6 +391,7 @@ padding: 2px;
 color: #3498db;
 }
 
+/* Full-Screen Samsung Gallery Viewer Styles */
 .gallery-modal {
 display: none;
 position: fixed;
@@ -497,6 +500,7 @@ left: 15px;
 right: 15px;
 }
 
+/* Modal Popup General */
 .modal {
 display: none;
 position: fixed;
@@ -613,17 +617,19 @@ margin-top: 50px;
 </head>
 <body>
 
+<!-- Strict Login Screen -->
 <div id="login-screen">
 <div class="login-box">
 <h2>RONOCK CHERAGEE</h2>
-<p>SCHOOL MEMORIES</p>
+<p>SCHOOL MEMORIES </p>
 <div id="login-error" class="error-msg">Incorrect Username or Password!</div>
-<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off" autocapitalize="off">
+<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off">
 <input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
 <button class="login-btn" onclick="handleLogin()">Unlock Vault</button>
 </div>
 </div>
 
+<!-- Dashboard View -->
 <div id="app-content" style="display: none;">
 <div class="top-header">
 <div class="logo">RONOCK</div>
@@ -644,4 +650,734 @@ margin-top: 50px;
 
 <div class="action-bar">
 <div id="normal-actions">
-<label for="
+<label for="file-import" class="btn btn-import">+ Import File</label>
+<input type="file" id="file-import" multiple style="display: none;" onchange="handleMultipleImport(event)">
+<button class="btn btn-create-note" id="create-note-btn" onclick="openNoteEditor()">+ Write Note</button>
+</div>
+
+<div id="selection-actions" style="display: none; width: 100%;">
+<span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
+<div style="float: right;">
+<button class="btn btn-select-all" onclick="selectAllItems()">Select All</button>
+<button class="btn btn-secret-action" id="moveToSecretBtn" onclick="promptMoveToSecret()" style="display:inline-block;">Move to Secret</button>
+<button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
+<button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
+<button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
+</div>
+</div>
+</div>
+
+<div class="main-container">
+<div class="grid-layout" id="media-grid">
+<div class="loader">Loading cloud files...</div>
+</div>
+</div>
+</div>
+
+<!-- Full-Screen Samsung Gallery Viewer Modal -->
+<div id="gallery-modal" class="gallery-modal">
+<div class="gallery-top-bar">
+<button class="gallery-back-btn" onclick="closeGalleryModal()">⬅</button>
+<div id="gallery-title" class="gallery-title">FileName</div>
+<div class="gallery-right-actions">
+<button class="gallery-action-btn" onclick="showMediaDetails()" title="Info">ℹ️</button>
+<button class="gallery-action-btn" onclick="downloadCurrentGalleryItem()" title="Download">💾</button>
+</div>
+</div>
+<div class="gallery-viewer-body" id="gallery-viewer-body">
+<button class="gallery-nav-btn gallery-prev" onclick="plusGalleryIndex(-1)">❮</button>
+<div id="gallery-content-area" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
+<button class="gallery-nav-btn gallery-next" onclick="plusGalleryIndex(1)">❯</button>
+</div>
+</div>
+
+<!-- Media Details (Info ℹ️) Modal -->
+<div id="info-modal" class="modal" onclick="closeInfoModal()">
+<div class="modal-content-box" onclick="event.stopPropagation()">
+<h3>Media Details ℹ️</h3>
+<div id="info-details-content" class="info-details-list"></div>
+<button class="btn btn-import" style="width: 100%;" onclick="closeInfoModal()">Close</button>
+</div>
+</div>
+
+<!-- Secret PIN Prompt Modal (Used for Tab Access & Moving Files) -->
+<div id="pin-modal" class="modal">
+<div class="modal-content-box">
+<h3>Enter Secret PIN 🔑</h3>
+<p id="pin-modal-desc">Enter PIN to access or move protected files</p>
+<input type="password" id="secret-pin-input" class="input-field" maxlength="4" placeholder="4-Digit PIN" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
+<div style="display: flex; gap: 10px;">
+<button class="btn btn-cancel" style="flex:1;" onclick="cancelPinPrompt()">Cancel</button>
+<button class="btn btn-import" style="flex:1;" onclick="verifySecretPin()">Unlock</button>
+</div>
+</div>
+</div>
+
+<!-- Note Pad Modal -->
+<div id="note-modal" class="modal" onclick="closeNoteModal()">
+<div class="note-modal-content" onclick="event.stopPropagation()">
+<div class="note-modal-header">
+<span style="font-weight: bold; color: #84817a; font-size: 14px;">Samsung Note Pad</span>
+<div>
+<button class="btn btn-import" onclick="saveNote()">Save Note</button>
+<span class="close-btn" style="font-size:22px; cursor:pointer; margin-left:10px;" onclick="closeNoteModal()">×</span>
+</div>
+</div>
+<div class="note-modal-body">
+<input type="text" id="note-title" class="note-title-input" placeholder="Title...">
+<textarea id="note-content" class="note-textarea" placeholder="Start typing your note here..."></textarea>
+</div>
+</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const DEFAULT_USERNAME = "RONOCK";
+const DEFAULT_PASSWORD = "@Ronock.268841";
+
+// Hardcoded Secret PIN (Change this PIN whenever you want)
+const DEFAULT_SECRET_PIN = "2688"; 
+
+const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
+const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
+
+window.handleLogin = function() {
+const u = document.getElementById('username-input').value.trim();
+const p = document.getElementById('password-input').value.trim();
+
+if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
+sessionStorage.setItem('ronock_active_session', 'true');
+showVaultAndInitFirebase();
+} else {
+document.getElementById('login-error').style.display = 'block';
+}
+};
+
+window.handleLogout = function() {
+sessionStorage.removeItem('ronock_active_session');
+sessionStorage.removeItem('secret_unlocked');
+location.reload();
+};
+
+const firebaseConfig = {
+apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
+authDomain: "my-memory-vault-630b3.firebaseapp.com",
+databaseURL: "https://my-memory-vault-630b3-default-rtdb.firebaseio.com",
+projectId: "my-memory-vault-630b3",
+storageBucket: "my-memory-vault-630b3.appspot.com",
+messagingSenderId: "31545523452",
+appId: "1:31545523452:web:aadaa50f7a7571c8beeb79",
+measurementId: "G-QMBXSZD2EV"
+};
+
+let db = null;
+let memoriesRef = null;
+
+function showVaultAndInitFirebase() {
+document.getElementById('login-screen').style.display = 'none';
+document.getElementById('app-content').style.display = 'block';
+
+if (!db) {
+const app = initializeApp(firebaseConfig);
+db = getFirestore(app);
+memoriesRef = collection(db, "memories");
+
+onSnapshot(memoriesRef, (snapshot) => {
+window.vaultItems = snapshot.docs.map(doc => ({
+docId: doc.id,
+...doc.data()
+}));
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+renderGrid();
+}, (error) => {
+document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+});
+}
+}
+
+if (sessionStorage.getItem('ronock_active_session') === 'true') {
+showVaultAndInitFirebase();
+}
+
+window.vaultItems = [];
+window.selectedItemIds = [];
+window.currentCategory = 'all';
+window.isSelectionMode = false;
+window.holdTimer = null;
+window.editingNoteDocId = null;
+
+window.currentGalleryList = [];
+window.currentGalleryIndex = 0;
+
+function getOptimizedMediaUrl(url, category) {
+if (!url) return '';
+if (category === 'video' && url.includes('/upload/')) {
+return url.replace('/upload/', '/upload/f_auto,q_auto/');
+}
+if (category === 'image' && url.includes('/upload/')) {
+return url.replace('/upload/', '/upload/w_300,c_scale,q_auto,f_auto/');
+}
+return url;
+}
+
+let lastIndex = -1;
+
+function getVideoThumbnailUrl(url) {
+if (!url) return '';
+if (url.includes('/upload/')) {
+let thumb = url.replace('/upload/', '/upload/w_300,c_fill,so_0,f_jpg,q_auto/');
+lastIndex = thumb.lastIndexOf('.');
+if (lastIndex !== -1) {
+thumb = thumb.substring(0, lastIndex) + '.jpg';
+}
+return thumb;
+}
+return url;
+}
+
+function uploadSingleFile(file, fileIndex, totalFiles) {
+return new Promise((resolve, reject) => {
+let fileCategory = 'text';
+if (file.type.startsWith('image/')) fileCategory = 'image';
+else if (file.type.startsWith('video/') || file.name.endsWith('.MOV') || file.name.endsWith('.mov')) fileCategory = 'video';
+else if (file.type.startsWith('audio/')) fileCategory = 'audio';
+
+let resourceType = 'auto';
+if (fileCategory === 'video' || fileCategory === 'audio') {
+resourceType = 'video';
+} else if (fileCategory === 'image') {
+resourceType = 'image';
+} else {
+resourceType = 'raw';
+}
+
+const formData = new FormData();
+formData.append('file', file);
+formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+const xhr = new XMLHttpRequest();
+const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
+
+xhr.open('POST', uploadUrl, true);
+
+xhr.upload.onprogress = (e) => {
+if (e.lengthComputable) {
+const progress = Math.round((e.loaded / e.total) * 100);
+document.getElementById('sync-status').innerText = `Uploading [${fileIndex + 1}/${totalFiles}]: ${progress}% ⏳`;
+}
+};
+
+xhr.onload = async () => {
+if (xhr.status === 200) {
+const res = JSON.parse(xhr.responseText);
+
+const existingItem = window.vaultItems.find(item => 
+  item.name === file.name && item.fileSize === file.size
+);
+
+let isOverwritten = false;
+if (existingItem) {
+const docRef = doc(db, "memories", existingItem.docId);
+await updateDoc(docRef, {
+url: res.secure_url,
+publicId: res.public_id,
+type: file.type,
+fileSize: file.size,
+createdAt: new Date().toISOString()
+});
+isOverwritten = true;
+} else {
+await addDoc(memoriesRef, {
+id: Date.now() + Math.random(),
+name: file.name,
+url: res.secure_url,
+publicId: res.public_id,
+type: file.type,
+fileSize: file.size || 0,
+category: fileCategory,
+isSecret: window.currentCategory === 'secret',
+textContent: '',
+createdAt: new Date().toISOString()
+});
+}
+resolve({ success: true, overwritten: isOverwritten });
+} else {
+reject(new Error("Cloudinary error"));
+}
+};
+
+xhr.onerror = () => reject(new Error("Network error"));
+xhr.send(formData);
+});
+}
+
+window.handleMultipleImport = async function(event) {
+const files = event.target.files;
+if (!files || files.length === 0 || !memoriesRef) return;
+
+const fileArray = Array.from(files);
+const totalFiles = fileArray.length;
+let newCount = 0;
+let overwrittenCount = 0;
+
+for (let i = 0; i < totalFiles; i++) {
+try {
+const result = await uploadSingleFile(fileArray[i], i, totalFiles);
+if (result.overwritten) {
+overwrittenCount++;
+} else {
+newCount++;
+}
+} catch (err) {
+console.error(`Error uploading ${fileArray[i].name}:`, err);
+}
+}
+
+document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+event.target.value = '';
+
+alert(`Upload Finished!\n✅ ${newCount} New files uploaded\n🔄 ${overwrittenCount} Files updated/overwritten`);
+};
+
+window.saveNote = async function() {
+if(!memoriesRef) return;
+const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
+const content = document.getElementById('note-content').value;
+
+try {
+if (window.editingNoteDocId) {
+const docRef = doc(db, "memories", window.editingNoteDocId);
+await updateDoc(docRef, {
+name: title.endsWith('.txt') ? title : title + '.txt',
+textContent: content
+});
+} else {
+await addDoc(memoriesRef, {
+id: Date.now() + Math.random(),
+name: title.endsWith('.txt') ? title : title + '.txt',
+url: '',
+type: 'text/plain',
+category: 'text',
+isSecret: window.currentCategory === 'secret',
+textContent: content,
+createdAt: new Date().toISOString()
+});
+}
+closeNoteModal();
+} catch(err) {
+alert("Failed to save note: " + err.message);
+}
+};
+
+window.renameItem = async function(event, docId, currentName) {
+event.stopPropagation();
+const newName = prompt("Enter new name:", currentName);
+if (newName && newName.trim() !== "" && newName !== currentName) {
+try {
+const docRef = doc(db, "memories", docId);
+await updateDoc(docRef, { name: newName.trim() });
+} catch(err) {
+alert("Failed to rename: " + err.message);
+}
+}
+};
+
+window.selectAllItems = function() {
+const filteredItems = getFilteredItems();
+window.selectedItemIds = filteredItems.map(item => item.id);
+renderGrid();
+};
+
+window.deleteSelected = async function() {
+if(!db) return;
+const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
+for (const item of selectedDocs) {
+if (item.docId) {
+await deleteDoc(doc(db, "memories", item.docId));
+}
+}
+window.selectedItemIds = [];
+window.isSelectionMode = false;
+renderGrid();
+};
+
+// --- Secret PIN Lock & Management Logic ---
+let pendingCategoryElement = null;
+let pendingActionType = null; // 'switch' or 'move'
+
+window.switchCategory = function(category, element) {
+if (category === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
+pendingCategoryElement = element;
+pendingActionType = 'switch';
+openPinPrompt();
+return;
+}
+
+window.currentCategory = category;
+document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+element.classList.add('active');
+
+const createNoteBtn = document.getElementById('create-note-btn');
+
+if (category === 'text' || category === 'secret') {
+createNoteBtn.style.display = 'inline-block';
+} else {
+createNoteBtn.style.display = 'none';
+}
+
+renderGrid();
+};
+
+function openPinPrompt() {
+document.getElementById('secret-pin-input').value = '';
+document.getElementById('pin-modal').style.display = 'flex';
+}
+
+window.cancelPinPrompt = function() {
+document.getElementById('pin-modal').style.display = 'none';
+pendingActionType = null;
+};
+
+window.verifySecretPin = function() {
+const pinInput = document.getElementById('secret-pin-input').value.trim();
+
+if (pinInput === DEFAULT_SECRET_PIN) {
+sessionStorage.setItem('secret_unlocked', 'true');
+document.getElementById('pin-modal').style.display = 'none';
+
+if (pendingActionType === 'switch') {
+window.switchCategory('secret', pendingCategoryElement);
+} else if (pendingActionType === 'move') {
+executeMoveToSecret();
+}
+pendingActionType = null;
+} else {
+alert("Incorrect PIN!");
+document.getElementById('secret-pin-input').value = '';
+}
+};
+
+window.promptMoveToSecret = function() {
+if (window.selectedItemIds.length === 0) return;
+
+if (window.currentCategory === 'secret') {
+// If already in secret, moving means unsecret (restore to normal) - no PIN needed
+executeMoveToSecret();
+} else {
+// Moving to secret requires PIN verification
+pendingActionType = 'move';
+openPinPrompt();
+}
+};
+
+async function executeMoveToSecret() {
+if (!db || window.selectedItemIds.length === 0) return;
+const targetSecretState = window.currentCategory !== 'secret';
+
+const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
+for (const item of selectedDocs) {
+if (item.docId) {
+const docRef = doc(db, "memories", item.docId);
+await updateDoc(docRef, { isSecret: targetSecretState });
+}
+}
+window.selectedItemIds = [];
+window.isSelectionMode = false;
+renderGrid();
+alert(targetSecretState ? "Moved selected files to Secret Vault 🔑" : "Restored selected files to Normal Vault 📂");
+}
+
+function getFilteredItems() {
+if (window.currentCategory === 'secret') {
+return window.vaultItems.filter(item => item.isSecret);
+} else if (window.currentCategory === 'all') {
+return window.vaultItems.filter(item => !item.isSecret);
+} else {
+return window.vaultItems.filter(item => item.category === window.currentCategory && !item.isSecret);
+}
+}
+
+window.renderGrid = function() {
+const grid = document.getElementById('media-grid');
+grid.innerHTML = '';
+
+if (window.isSelectionMode) {
+grid.classList.add('selection-mode');
+document.getElementById('moveToSecretBtn').innerText = window.currentCategory === 'secret' ? 'Unsecret' : 'Move to Secret';
+} else {
+grid.classList.remove('selection-mode');
+}
+
+const filteredItems = getFilteredItems();
+
+if(filteredItems.length === 0) {
+grid.innerHTML = `<div class="loader">No items in ${window.currentCategory} category yet.</div>`;
+updateActionBar();
+return;
+}
+
+filteredItems.forEach(item => {
+const card = document.createElement('div');
+const isSelected = window.selectedItemIds.includes(item.id);
+card.className = `card ${isSelected ? 'selected' : ''}`;
+
+let previewHTML = '';
+if (item.category === 'image') {
+const thumbUrl = getOptimizedMediaUrl(item.url, 'image');
+previewHTML = `<img src="${thumbUrl}" loading="lazy">`;
+} else if (item.category === 'video') {
+const thumbUrl = getVideoThumbnailUrl(item.url);
+previewHTML = `
+<div class="video-thumb-container">
+<img src="${thumbUrl}" loading="lazy">
+<div class="play-icon">▶</div>
+</div>`;
+} else if (item.category === 'audio') {
+previewHTML = `
+<div class="audio-preview">
+<span style="font-size:24px;">🎙</span>
+<audio src="${item.url}" controls preload="none" onclick="event.stopPropagation()"></audio>
+</div>`;
+} else {
+const textPreview = item.textContent ? item.textContent : 'Text Document';
+previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
+}
+
+card.innerHTML = `
+<div class="checkbox-circle"></div>
+<div class="preview-box">${previewHTML}</div>
+<div class="card-title-container">
+<div class="card-title">${item.name}</div>
+<span class="rename-icon" title="Rename" onclick="renameItem(event, '${item.docId}', '${item.name}')">✏</span>
+</div>`;
+
+const startHold = () => {
+window.holdTimer = setTimeout(() => {
+if (!window.isSelectionMode) {
+window.isSelectionMode = true;
+toggleSelectItem(item.id);
+}
+}, 1000);
+};
+
+const clearHold = () => {
+if (window.holdTimer) clearTimeout(window.holdTimer);
+};
+
+card.addEventListener('touchstart', startHold, { passive: true });
+card.addEventListener('touchend', clearHold);
+card.addEventListener('touchmove', clearHold);
+
+card.addEventListener('mousedown', startHold);
+card.addEventListener('mouseup', clearHold);
+card.addEventListener('mouseleave', clearHold);
+
+card.addEventListener('click', (e) => {
+if (e.target.classList.contains('rename-icon')) return;
+if (window.isSelectionMode) {
+toggleSelectItem(item.id);
+} else if (item.category !== 'audio') {
+openGalleryModal(filteredItems, item);
+}
+});
+
+grid.appendChild(card);
+});
+
+updateActionBar();
+};
+
+window.openNoteEditor = function(noteItem = null) {
+if (noteItem) {
+window.editingNoteDocId = noteItem.docId;
+document.getElementById('note-title').value = noteItem.name.replace('.txt', '');
+document.getElementById('note-content').value = noteItem.textContent;
+} else {
+window.editingNoteDocId = null;
+document.getElementById('note-title').value = '';
+document.getElementById('note-content').value = '';
+}
+document.getElementById('note-modal').style.display = 'flex';
+};
+
+window.closeNoteModal = function() {
+document.getElementById('note-modal').style.display = 'none';
+};
+
+window.toggleSelectItem = function(id) {
+if (window.selectedItemIds.includes(id)) {
+window.selectedItemIds = window.selectedItemIds.filter(itemId => itemId !== id);
+} else {
+window.selectedItemIds.push(id);
+}
+renderGrid();
+};
+
+window.exitSelectionMode = function() {
+window.isSelectionMode = false;
+window.selectedItemIds = [];
+renderGrid();
+};
+
+// --- Full Screen Samsung Gallery Modal Logic ---
+window.openGalleryModal = function(itemList, selectedItem) {
+window.currentGalleryList = itemList.filter(i => i.category === 'image' || i.category === 'video' || i.category === 'text');
+window.currentGalleryIndex = window.currentGalleryList.findIndex(i => i.id === selectedItem.id);
+if(window.currentGalleryIndex === -1) window.currentGalleryIndex = 0;
+
+document.getElementById('gallery-modal').style.display = 'flex';
+renderGalleryItem();
+history.pushState({ galleryOpen: true }, "");
+};
+
+window.closeGalleryModal = function() {
+const modal = document.getElementById('gallery-modal');
+if (modal.style.display === 'flex') {
+modal.style.display = 'none';
+const video = document.getElementById('gallery-content-area').querySelector('video');
+if(video) video.pause();
+}
+};
+
+window.plusGalleryIndex = function(n) {
+window.currentGalleryIndex += n;
+if (window.currentGalleryIndex >= window.currentGalleryList.length) {
+window.currentGalleryIndex = 0;
+} else if (window.currentGalleryIndex < 0) {
+window.currentGalleryIndex = window.currentGalleryList.length - 1;
+}
+renderGalleryItem();
+};
+
+window.renderGalleryItem = function() {
+if (window.currentGalleryList.length === 0) return;
+const item = window.currentGalleryList[window.currentGalleryIndex];
+document.getElementById('gallery-title').innerText = item.name;
+
+const contentArea = document.getElementById('gallery-content-area');
+const playableUrl = getOptimizedMediaUrl(item.url, item.category);
+
+if (item.category === 'image') {
+contentArea.innerHTML = `<img src="${item.url}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
+} else if (item.category === 'video') {
+contentArea.innerHTML = `<video src="${playableUrl}" controls autoplay style="max-width:100%; max-height:100%; object-fit:contain;"></video>`;
+} else if (item.category === 'text') {
+contentArea.innerHTML = `<div style="background:#fffbf0; color:#333; padding:20px; border-radius:8px; max-width:80%; max-height:80%; overflow-y:auto; text-align:left; font-size:16px; line-height:1.6;"><h3>${item.name}</h3><hr style="margin:10px 0;"><p>${item.textContent || ''}</p></div>`;
+}
+};
+
+// --- Media Details (Info ℹ️) Logic ---
+window.showMediaDetails = function() {
+const item = window.currentGalleryList[window.currentGalleryIndex];
+if (!item) return;
+
+let formattedSize = "Unknown";
+if (item.fileSize) {
+const bytes = item.fileSize;
+if (bytes >= 1048576) formattedSize = (bytes / 1048576).toFixed(2) + " MB";
+else if (bytes >= 1024) formattedSize = (bytes / 1024).toFixed(2) + " KB";
+else formattedSize = bytes + " Bytes";
+}
+
+let uploadDate = "N/A";
+if (item.createdAt) {
+uploadDate = new Date(item.createdAt).toLocaleString();
+}
+
+const infoHTML = `
+<div><strong>File Name:</strong> ${item.name}</div>
+<div><strong>Category:</strong> ${item.category.toUpperCase()}</div>
+<div><strong>File Size:</strong> ${formattedSize}</div>
+<div><strong>MIME Type:</strong> ${item.type || 'N/A'}</div>
+<div><strong>Upload Date:</strong> ${uploadDate}</div>
+<div><strong>Secret Status:</strong> ${item.isSecret ? 'Protected 🔑' : 'Normal'}</div>
+`;
+
+document.getElementById('info-details-content').innerHTML = infoHTML;
+document.getElementById('info-modal').style.display = 'flex';
+};
+
+window.closeInfoModal = function() {
+document.getElementById('info-modal').style.display = 'none';
+};
+
+window.downloadCurrentGalleryItem = function() {
+const item = window.currentGalleryList[window.currentGalleryIndex];
+if (item && item.url) {
+downloadSingleItem(item);
+} else if (item && item.category === 'text') {
+const blob = new Blob([item.textContent], { type: 'text/plain' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = item.name;
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+}
+};
+
+// Handle Mobile Back Button Hardware Press
+window.addEventListener('popstate', (event) => {
+closeGalleryModal();
+closeInfoModal();
+});
+
+// Touch Swipe Support for Gallery
+let touchstartX = 0;
+let touchendX = 0;
+
+const galleryBody = document.getElementById('gallery-viewer-body');
+galleryBody.addEventListener('touchstart', e => {
+touchstartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+galleryBody.addEventListener('touchend', e => {
+touchendX = e.changedTouches[0].screenX;
+handleSwipeGesture();
+}, { passive: true });
+
+function handleSwipeGesture() {
+if (touchendX < touchstartX - 50) {
+plusGalleryIndex(1);
+}
+if (touchendX > touchstartX + 50) {
+plusGalleryIndex(-1);
+}
+}
+
+window.downloadSingleItem = function(item) {
+const a = document.createElement('a');
+a.href = item.url;
+a.download = item.name;
+a.target = "_blank";
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+};
+
+window.downloadSelectedFiles = function() {
+window.vaultItems.filter(item => window.selectedItemIds.includes(item.id)).forEach(item => {
+downloadSingleItem(item);
+});
+};
+
+window.updateActionBar = function() {
+const normalActions = document.getElementById('normal-actions');
+const selectionActions = document.getElementById('selection-actions');
+const countText = document.getElementById('selected-count');
+
+if (window.isSelectionMode) {
+normalActions.style.display = 'none';
+selectionActions.style.display = 'block';
+countText.innerText = `Selected: ${window.selectedItemIds.length}`;
+} else {
+normalActions.style.display = 'block';
+selectionActions.style.display = 'none';
+}
+};
+</script>
+</body>
+  </html>
