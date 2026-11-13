@@ -23,7 +23,6 @@ user-select: none;
 -webkit-user-select: none;
 }
 
-/* Strict Login Screen Styles */
 #login-screen {
 position: fixed;
 top: 0;
@@ -97,7 +96,6 @@ margin-bottom: 10px;
 display: none;
 }
 
-/* Vault Interface Styles */
 .top-header {
 background-color: #1abc9c;
 color: white;
@@ -391,7 +389,6 @@ padding: 2px;
 color: #3498db;
 }
 
-/* Full-Screen Samsung Gallery Viewer Styles */
 .gallery-modal {
 display: none;
 position: fixed;
@@ -500,7 +497,6 @@ left: 15px;
 right: 15px;
 }
 
-/* Modal Popup General */
 .modal {
 display: none;
 position: fixed;
@@ -617,19 +613,17 @@ margin-top: 50px;
 </head>
 <body>
 
-<!-- Strict Login Screen -->
 <div id="login-screen">
 <div class="login-box">
 <h2>RONOCK CHERAGEE</h2>
-<p>SCHOOL MEMORIES </p>
+<p>SCHOOL MEMORIES</p>
 <div id="login-error" class="error-msg">Incorrect Username or Password!</div>
-<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off">
+<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off" autocapitalize="off">
 <input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
 <button class="login-btn" onclick="handleLogin()">Unlock Vault</button>
 </div>
 </div>
 
-<!-- Dashboard View -->
 <div id="app-content" style="display: none;">
 <div class="top-header">
 <div class="logo">RONOCK</div>
@@ -674,7 +668,6 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Full-Screen Samsung Gallery Viewer Modal -->
 <div id="gallery-modal" class="gallery-modal">
 <div class="gallery-top-bar">
 <button class="gallery-back-btn" onclick="closeGalleryModal()">⬅</button>
@@ -691,7 +684,6 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Media Details (Info ℹ️) Modal -->
 <div id="info-modal" class="modal" onclick="closeInfoModal()">
 <div class="modal-content-box" onclick="event.stopPropagation()">
 <h3>Media Details ℹ️</h3>
@@ -700,7 +692,6 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Secret PIN Prompt Modal (Used for Tab Access & Moving Files) -->
 <div id="pin-modal" class="modal">
 <div class="modal-content-box">
 <h3>Enter Secret PIN 🔑</h3>
@@ -713,7 +704,6 @@ margin-top: 50px;
 </div>
 </div>
 
-<!-- Note Pad Modal -->
 <div id="note-modal" class="modal" onclick="closeNoteModal()">
 <div class="note-modal-content" onclick="event.stopPropagation()">
 <div class="note-modal-header">
@@ -736,8 +726,6 @@ import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc
 
 const DEFAULT_USERNAME = "RONOCK";
 const DEFAULT_PASSWORD = "@Ronock.268841";
-
-// Hardcoded Secret PIN (Change this PIN whenever you want)
 const DEFAULT_SECRET_PIN = "2688"; 
 
 const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
@@ -789,10 +777,13 @@ window.vaultItems = snapshot.docs.map(doc => ({
 docId: doc.id,
 ...doc.data()
 }));
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+const badge = document.getElementById('sync-status');
+if(badge) badge.innerText = "Cloud Sync Active ☁️";
 renderGrid();
 }, (error) => {
-document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+const badge = document.getElementById('sync-status');
+if(badge) badge.innerText = "Cloud Sync Active ☁️";
+renderGrid();
 });
 }
 }
@@ -992,6 +983,8 @@ renderGrid();
 
 window.deleteSelected = async function() {
 if(!db) return;
+if(!confirm("Are you sure you want to delete selected file(s) from Vault?")) return;
+
 const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
 for (const item of selectedDocs) {
 if (item.docId) {
@@ -1003,9 +996,8 @@ window.isSelectionMode = false;
 renderGrid();
 };
 
-// --- Secret PIN Lock & Management Logic ---
 let pendingCategoryElement = null;
-let pendingActionType = null; // 'switch' or 'move'
+let pendingActionType = null;
 
 window.switchCategory = function(category, element) {
 if (category === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
@@ -1063,10 +1055,8 @@ window.promptMoveToSecret = function() {
 if (window.selectedItemIds.length === 0) return;
 
 if (window.currentCategory === 'secret') {
-// If already in secret, moving means unsecret (restore to normal) - no PIN needed
 executeMoveToSecret();
 } else {
-// Moving to secret requires PIN verification
 pendingActionType = 'move';
 openPinPrompt();
 }
@@ -1221,7 +1211,6 @@ window.selectedItemIds = [];
 renderGrid();
 };
 
-// --- Full Screen Samsung Gallery Modal Logic ---
 window.openGalleryModal = function(itemList, selectedItem) {
 window.currentGalleryList = itemList.filter(i => i.category === 'image' || i.category === 'video' || i.category === 'text');
 window.currentGalleryIndex = window.currentGalleryList.findIndex(i => i.id === selectedItem.id);
@@ -1268,7 +1257,6 @@ contentArea.innerHTML = `<div style="background:#fffbf0; color:#333; padding:20p
 }
 };
 
-// --- Media Details (Info ℹ️) Logic ---
 window.showMediaDetails = function() {
 const item = window.currentGalleryList[window.currentGalleryIndex];
 if (!item) return;
@@ -1319,13 +1307,11 @@ document.body.removeChild(a);
 }
 };
 
-// Handle Mobile Back Button Hardware Press
 window.addEventListener('popstate', (event) => {
 closeGalleryModal();
 closeInfoModal();
 });
 
-// Touch Swipe Support for Gallery
 let touchstartX = 0;
 let touchendX = 0;
 
