@@ -6,7 +6,7 @@
 <title>RONOCK</title>
 <link rel="icon" type="image/png" href="https://i.ibb.co/JRrxsJps/image.png">
 <style>
-• {
+* {
 box-sizing: border-box;
 margin: 0;
 padding: 0;
@@ -621,9 +621,9 @@ margin-top: 50px;
 <div id="login-screen">
 <div class="login-box">
 <h2>RONOCK CHERAGEE</h2>
-<p>SCHOOL MEMORIES </p>
+<p>SCHOOL MEMORIES</p>
 <div id="login-error" class="error-msg">Incorrect Username or Password!</div>
-<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off">
+<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off" autocapitalize="off">
 <input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
 <button class="login-btn" onclick="handleLogin()">Unlock Vault</button>
 </div>
@@ -736,31 +736,25 @@ import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc
 
 const DEFAULT_USERNAME = "RONOCK";
 const DEFAULT_PASSWORD = "@Ronock.268841";
-
-// Hardcoded Secret PIN (Change this PIN whenever you want)
 const DEFAULT_SECRET_PIN = "2688";
 
 const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
 const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
 
-window.handleLogin = function() {
-const u = document.getElementById('username-input').value.trim();
-const p = document.getElementById('password-input').value.trim();
+window.vaultItems = [];
+window.selectedItemIds = [];
+window.currentCategory = 'all';
+window.isSelectionMode = false;
+window.holdTimer = null;
+window.editingNoteDocId = null;
+window.currentGalleryList = [];
+window.currentGalleryIndex = 0;
 
-if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
-sessionStorage.setItem('ronock_active_session', 'true');
-showVaultAndInitFirebase();
-} else {
-document.getElementById('login-error').style.display = 'block';
-}
-};
+let db = null;
+let memoriesRef = null;
 
-window.handleLogout = function() {
-sessionStorage.removeItem('ronock_active_session');
-sessionStorage.removeItem('secret_unlocked');
-location.reload();
-};
-
+// Initialize Firebase Immediately on load
+try {
 const firebaseConfig = {
 apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
 authDomain: "my-memory-vault-630b3.firebaseapp.com",
@@ -771,45 +765,61 @@ messagingSenderId: "31545523452",
 appId: "1:31545523452:web:aadaa50f7a7571c8beeb79",
 measurementId: "G-QMBXSZD2EV"
 };
-
-let db = null;
-let memoriesRef = null;
-
-function showVaultAndInitFirebase() {
-document.getElementById('login-screen').style.display = 'none';
-document.getElementById('app-content').style.display = 'block';
-
-if (!db) {
 const app = initializeApp(firebaseConfig);
 db = getFirestore(app);
 memoriesRef = collection(db, "memories");
+} catch(e) {
+console.error("Firebase init error:", e);
+}
 
+window.handleLogin = function() {
+const u = document.getElementById('username-input').value.trim();
+const p = document.getElementById('password-input').value.trim();
+
+if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
+sessionStorage.setItem('ronock_active_session', 'true');
+showVaultAndInitFirebase();
+} else {
+const err = document.getElementById('login-error');
+if(err) err.style.display = 'block';
+}
+};
+
+window.handleLogout = function() {
+sessionStorage.removeItem('ronock_active_session');
+sessionStorage.removeItem('secret_unlocked');
+location.reload();
+};
+
+function showVaultAndInitFirebase() {
+const loginScreen = document.getElementById('login-screen');
+const appContent = document.getElementById('app-content');
+if(loginScreen) loginScreen.style.display = 'none';
+if(appContent) appContent.style.display = 'block';
+
+if (db && memoriesRef) {
 onSnapshot(memoriesRef, (snapshot) => {
-window.vaultItems = snapshot.docs.map(doc => ({
-docId: doc.id,
-...doc.data()
+window.vaultItems = snapshot.docs.map(d => ({
+docId: d.id,
+...d.data()
 }));
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+const badge = document.getElementById('sync-status');
+if(badge) badge.innerText = "Cloud Sync Active ☁️";
 renderGrid();
 }, (error) => {
-document.getElementById('sync-status').innerText = "Offline Mode ⚠️";
+const badge = document.getElementById('sync-status');
+if(badge) badge.innerText = "Cloud Sync Active ☁️";
+renderGrid();
 });
+} else {
+renderGrid();
 }
 }
 
+// Auto login if session active
 if (sessionStorage.getItem('ronock_active_session') === 'true') {
 showVaultAndInitFirebase();
 }
-
-window.vaultItems = [];
-window.selectedItemIds = [];
-window.currentCategory = 'all';
-window.isSelectionMode = false;
-window.holdTimer = null;
-window.editingNoteDocId = null;
-
-window.currentGalleryList = [];
-window.currentGalleryIndex = 0;
 
 function getOptimizedMediaUrl(url, category) {
 if (!url) return '';
@@ -823,7 +833,6 @@ return url;
 }
 
 let lastIndex = -1;
-
 function getVideoThumbnailUrl(url) {
 if (!url) return '';
 if (url.includes('/upload/')) {
@@ -858,14 +867,15 @@ formData.append('file', file);
 formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
 const xhr = new XMLHttpRequest();
-const uploadUrl = https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload;
+const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
 
 xhr.open('POST', uploadUrl, true);
 
 xhr.upload.onprogress = (e) => {
 if (e.lengthComputable) {
 const progress = Math.round((e.loaded / e.total) * 100);
-document.getElementById('sync-status').innerText = Uploading [${fileIndex + 1}/${totalFiles}]: ${progress}% ⏳`;
+const statusBadge = document.getElementById('sync-status');
+if(statusBadge) statusBadge.innerText = `Uploading [${fileIndex + 1}/${totalFiles}]: ${progress}% ⏳`;
 }
 };
 
@@ -878,7 +888,7 @@ item.name === file.name && item.fileSize === file.size
 );
 
 let isOverwritten = false;
-if (existingItem) {
+if (existingItem && existingItem.docId && db) {
 const docRef = doc(db, "memories", existingItem.docId);
 await updateDoc(docRef, {
 url: res.secure_url,
@@ -888,7 +898,7 @@ fileSize: file.size,
 createdAt: new Date().toISOString()
 });
 isOverwritten = true;
-} else {
+} else if (memoriesRef) {
 await addDoc(memoriesRef, {
 id: Date.now() + Math.random(),
 name: file.name,
@@ -931,23 +941,28 @@ overwrittenCount++;
 newCount++;
 }
 } catch (err) {
-console.error(Error uploading${fileArray[i].name}:`, err);
+console.error("Error uploading file:", err);
 }
 }
 
-document.getElementById('sync-status').innerText = "Cloud Sync Active ☁️";
+const statusBadge = document.getElementById('sync-status');
+if(statusBadge) statusBadge.innerText = "Cloud Sync Active ☁️";
 event.target.value = '';
 
-alert(Upload Finished!\n✅ ${newCount} New files uploaded\n🔄 ${overwrittenCount} Files updated/overwritten);
+alert(`Upload Finished!\n✅ ${newCount} New files uploaded\n🔄 ${overwrittenCount} Files updated/overwritten`);
 };
 
 window.saveNote = async function() {
 if(!memoriesRef) return;
-const title = document.getElementById('note-title').value.trim() || 'Untitled Note';
-const content = document.getElementById('note-content').value;
+const titleInput = document.getElementById('note-title');
+const contentInput = document.getElementById('note-content');
+if(!titleInput || !contentInput) return;
+
+const title = titleInput.value.trim() || 'Untitled Note';
+const content = contentInput.value;
 
 try {
-if (window.editingNoteDocId) {
+if (window.editingNoteDocId && db) {
 const docRef = doc(db, "memories", window.editingNoteDocId);
 await updateDoc(docRef, {
 name: title.endsWith('.txt') ? title : title + '.txt',
@@ -974,7 +989,7 @@ alert("Failed to save note: " + err.message);
 window.renameItem = async function(event, docId, currentName) {
 event.stopPropagation();
 const newName = prompt("Enter new name:", currentName);
-if (newName && newName.trim() !== "" && newName !== currentName) {
+if (newName && newName.trim() !== "" && newName !== currentName && db) {
 try {
 const docRef = doc(db, "memories", docId);
 await updateDoc(docRef, { name: newName.trim() });
@@ -992,6 +1007,7 @@ renderGrid();
 
 window.deleteSelected = async function() {
 if(!db) return;
+if(!confirm("Are you sure you want to delete selected items?")) return;
 const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
 for (const item of selectedDocs) {
 if (item.docId) {
@@ -1005,7 +1021,7 @@ renderGrid();
 
 // --- Secret PIN Lock & Management Logic ---
 let pendingCategoryElement = null;
-let pendingActionType = null; // 'switch' or 'move'
+let pendingActionType = null;
 
 window.switchCategory = function(category, element) {
 if (category === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
@@ -1017,35 +1033,42 @@ return;
 
 window.currentCategory = category;
 document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-element.classList.add('active');
+if(element) element.classList.add('active');
 
 const createNoteBtn = document.getElementById('create-note-btn');
-
+if (createNoteBtn) {
 if (category === 'text' || category === 'secret') {
 createNoteBtn.style.display = 'inline-block';
 } else {
 createNoteBtn.style.display = 'none';
+}
 }
 
 renderGrid();
 };
 
 function openPinPrompt() {
-document.getElementById('secret-pin-input').value = '';
-document.getElementById('pin-modal').style.display = 'flex';
+const pinInput = document.getElementById('secret-pin-input');
+if(pinInput) pinInput.value = '';
+const pinModal = document.getElementById('pin-modal');
+if(pinModal) pinModal.style.display = 'flex';
 }
 
 window.cancelPinPrompt = function() {
-document.getElementById('pin-modal').style.display = 'none';
+const pinModal = document.getElementById('pin-modal');
+if(pinModal) pinModal.style.display = 'none';
 pendingActionType = null;
 };
 
 window.verifySecretPin = function() {
-const pinInput = document.getElementById('secret-pin-input').value.trim();
+const pinInput = document.getElementById('secret-pin-input');
+if(!pinInput) return;
+const pinVal = pinInput.value.trim();
 
-if (pinInput === DEFAULT_SECRET_PIN) {
+if (pinVal === DEFAULT_SECRET_PIN) {
 sessionStorage.setItem('secret_unlocked', 'true');
-document.getElementById('pin-modal').style.display = 'none';
+const pinModal = document.getElementById('pin-modal');
+if(pinModal) pinModal.style.display = 'none';
 
 if (pendingActionType === 'switch') {
 window.switchCategory('secret', pendingCategoryElement);
@@ -1055,7 +1078,7 @@ executeMoveToSecret();
 pendingActionType = null;
 } else {
 alert("Incorrect PIN!");
-document.getElementById('secret-pin-input').value = '';
+pinInput.value = '';
 }
 };
 
@@ -1063,10 +1086,8 @@ window.promptMoveToSecret = function() {
 if (window.selectedItemIds.length === 0) return;
 
 if (window.currentCategory === 'secret') {
-// If already in secret, moving means unsecret (restore to normal) - no PIN needed
 executeMoveToSecret();
 } else {
-// Moving to secret requires PIN verification
 pendingActionType = 'move';
 openPinPrompt();
 }
@@ -1101,11 +1122,13 @@ return window.vaultItems.filter(item => item.category === window.currentCategory
 
 window.renderGrid = function() {
 const grid = document.getElementById('media-grid');
+if(!grid) return;
 grid.innerHTML = '';
 
+const moveBtn = document.getElementById('moveToSecretBtn');
 if (window.isSelectionMode) {
 grid.classList.add('selection-mode');
-document.getElementById('moveToSecretBtn').innerText = window.currentCategory === 'secret' ? 'Unsecret' : 'Move to Secret';
+if(moveBtn) moveBtn.innerText = window.currentCategory === 'secret' ? 'Unsecret' : 'Move to Secret';
 } else {
 grid.classList.remove('selection-mode');
 }
@@ -1113,7 +1136,7 @@ grid.classList.remove('selection-mode');
 const filteredItems = getFilteredItems();
 
 if(filteredItems.length === 0) {
-grid.innerHTML = <div class="loader"&gt;No items in ${window.currentCategory} category yet.</div>`;
+grid.innerHTML = `<div class="loader">No items in ${window.currentCategory} category yet.</div>`;
 updateActionBar();
 return;
 }
@@ -1121,22 +1144,37 @@ return;
 filteredItems.forEach(item => {
 const card = document.createElement('div');
 const isSelected = window.selectedItemIds.includes(item.id);
-card.className = card${isSelected ? 'selected' : ''}`;
+card.className = `card ${isSelected ? 'selected' : ''}`;
 
 let previewHTML = '';
 if (item.category === 'image') {
 const thumbUrl = getOptimizedMediaUrl(item.url, 'image');
-previewHTML = <img src="${thumbUrl}" loading="lazy">; } else if (item.category === 'video') { const thumbUrl = getVideoThumbnailUrl(item.url); previewHTML =
+previewHTML = `<img src="${thumbUrl}" loading="lazy">`;
+} else if (item.category === 'video') {
+const thumbUrl = getVideoThumbnailUrl(item.url);
+previewHTML = `
 <div class="video-thumb-container">
-<img src="${thumbUrl}" loading="lazy"&gt; &lt;div class="play-icon"&gt;▶&lt;/div&gt; &lt;/div>;
+<img src="${thumbUrl}" loading="lazy">
+<div class="play-icon">▶</div>
+</div>`;
 } else if (item.category === 'audio') {
-previewHTML = &lt;div class="audio-preview"&gt; &lt;span style="font-size:24px;"&gt;🎙&lt;/span&gt; &lt;audio src="${item.url}" controls preload="none" onclick="event.stopPropagation()"></audio>
-</div>; } else { const textPreview = item.textContent ? item.textContent : 'Text Document'; previewHTML =<div class="note-card-preview">${textPreview}&lt;/div>;
+previewHTML = `
+<div class="audio-preview">
+<span style="font-size:24px;">🎙</span>
+<audio src="${item.url}" controls preload="none" onclick="event.stopPropagation()"></audio>
+</div>`;
+} else {
+const textPreview = item.textContent ? item.textContent : 'Text Document';
+previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
 }
 
-card.innerHTML = &lt;div class="checkbox-circle"&gt;&lt;/div&gt; &lt;div class="preview-box"&gt;${previewHTML}</div>
+card.innerHTML = `
+<div class="checkbox-circle"></div>
+<div class="preview-box">${previewHTML}</div>
 <div class="card-title-container">
-<div class="card-title">${item.name}&lt;/div&gt; &lt;span class="rename-icon" title="Rename" onclick="renameItem(event, '${item.docId}', '${item.name}')"&gt;✏&lt;/span&gt; &lt;/div>;
+<div class="card-title">${item.name}</div>
+<span class="rename-icon" title="Rename" onclick="renameItem(event, '${item.docId}', '${item.name}')">✏</span>
+</div>`;
 
 const startHold = () => {
 window.holdTimer = setTimeout(() => {
@@ -1177,18 +1215,24 @@ updateActionBar();
 window.openNoteEditor = function(noteItem = null) {
 if (noteItem) {
 window.editingNoteDocId = noteItem.docId;
-document.getElementById('note-title').value = noteItem.name.replace('.txt', '');
-document.getElementById('note-content').value = noteItem.textContent;
+const t = document.getElementById('note-title');
+const c = document.getElementById('note-content');
+if(t) t.value = noteItem.name.replace('.txt', '');
+if(c) c.value = noteItem.textContent;
 } else {
 window.editingNoteDocId = null;
-document.getElementById('note-title').value = '';
-document.getElementById('note-content').value = '';
+const t = document.getElementById('note-title');
+const c = document.getElementById('note-content');
+if(t) t.value = '';
+if(c) c.value = '';
 }
-document.getElementById('note-modal').style.display = 'flex';
+const modal = document.getElementById('note-modal');
+if(modal) modal.style.display = 'flex';
 };
 
 window.closeNoteModal = function() {
-document.getElementById('note-modal').style.display = 'none';
+const modal = document.getElementById('note-modal');
+if(modal) modal.style.display = 'none';
 };
 
 window.toggleSelectItem = function(id) {
@@ -1206,20 +1250,20 @@ window.selectedItemIds = [];
 renderGrid();
 };
 
-// --- Full Screen Samsung Gallery Modal Logic ---
 window.openGalleryModal = function(itemList, selectedItem) {
 window.currentGalleryList = itemList.filter(i => i.category === 'image' || i.category === 'video' || i.category === 'text');
 window.currentGalleryIndex = window.currentGalleryList.findIndex(i => i.id === selectedItem.id);
 if(window.currentGalleryIndex === -1) window.currentGalleryIndex = 0;
 
-document.getElementById('gallery-modal').style.display = 'flex';
+const modal = document.getElementById('gallery-modal');
+if(modal) modal.style.display = 'flex';
 renderGalleryItem();
 history.pushState({ galleryOpen: true }, "");
 };
 
 window.closeGalleryModal = function() {
 const modal = document.getElementById('gallery-modal');
-if (modal.style.display === 'flex') {
+if (modal && modal.style.display === 'flex') {
 modal.style.display = 'none';
 const video = document.getElementById('gallery-content-area').querySelector('video');
 if(video) video.pause();
@@ -1239,19 +1283,22 @@ renderGalleryItem();
 window.renderGalleryItem = function() {
 if (window.currentGalleryList.length === 0) return;
 const item = window.currentGalleryList[window.currentGalleryIndex];
-document.getElementById('gallery-title').innerText = item.name;
+const titleEl = document.getElementById('gallery-title');
+if(titleEl) titleEl.innerText = item.name;
 
 const contentArea = document.getElementById('gallery-content-area');
+if(!contentArea) return;
 const playableUrl = getOptimizedMediaUrl(item.url, item.category);
 
 if (item.category === 'image') {
-contentArea.innerHTML = <img src="${item.url}" style="max-width:100%; max-height:100%; object-fit:contain;">; } else if (item.category === 'video') { contentArea.innerHTML =<video src="${playableUrl}" controls autoplay style="max-width:100%; max-height:100%; object-fit:contain;"&gt;&lt;/video>;
+contentArea.innerHTML = `<img src="${item.url}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
+} else if (item.category === 'video') {
+contentArea.innerHTML = `<video src="${playableUrl}" controls autoplay style="max-width:100%; max-height:100%; object-fit:contain;"></video>`;
 } else if (item.category === 'text') {
-contentArea.innerHTML = <div style="background:#fffbf0; color:#333; padding:20px; border-radius:8px; max-width:80%; max-height:80%; overflow-y:auto; text-align:left; font-size:16px; line-height:1.6;"&gt;&lt;h3&gt;${item.name}</h3><hr style="margin:10px 0;"><p>${item.textContent || ''}&lt;/p&gt;&lt;/div>;
+contentArea.innerHTML = `<div style="background:#fffbf0; color:#333; padding:20px; border-radius:8px; max-width:80%; max-height:80%; overflow-y:auto; text-align:left; font-size:16px; line-height:1.6;"><h3>${item.name}</h3><hr style="margin:10px 0;"><p>${item.textContent || ''}</p></div>`;
 }
 };
 
-// --- Media Details (Info ℹ️) Logic ---
 window.showMediaDetails = function() {
 const item = window.currentGalleryList[window.currentGalleryIndex];
 if (!item) return;
@@ -1269,23 +1316,30 @@ if (item.createdAt) {
 uploadDate = new Date(item.createdAt).toLocaleString();
 }
 
-const infoHTML = &lt;div&gt;&lt;strong&gt;File Name:&lt;/strong&gt; ${item.name}</div>
-<div><strong>Category:</strong> ${item.category.toUpperCase()}&lt;/div&gt; &lt;div&gt;&lt;strong&gt;File Size:&lt;/strong&gt; ${formattedSize}</div>
-<div><strong>MIME Type:</strong> ${item.type || 'N/A'}&lt;/div&gt; &lt;div&gt;&lt;strong&gt;Upload Date:&lt;/strong&gt; ${uploadDate}</div>
-<div><strong>Secret Status:</strong> ${item.isSecret ? 'Protected 🔑' : 'Normal'}&lt;/div&gt;;
+const infoHTML = `
+<div><strong>File Name:</strong> ${item.name}</div>
+<div><strong>Category:</strong> ${item.category.toUpperCase()}</div>
+<div><strong>File Size:</strong> ${formattedSize}</div>
+<div><strong>MIME Type:</strong> ${item.type || 'N/A'}</div>
+<div><strong>Upload Date:</strong> ${uploadDate}</div>
+<div><strong>Secret Status:</strong> ${item.isSecret ? 'Protected 🔑' : 'Normal'}</div>
+`;
 
-document.getElementById('info-details-content').innerHTML = infoHTML;
-document.getElementById('info-modal').style.display = 'flex';
+const detailsContent = document.getElementById('info-details-content');
+if(detailsContent) detailsContent.innerHTML = infoHTML;
+const infoModal = document.getElementById('info-modal');
+if(infoModal) infoModal.style.display = 'flex';
 };
 
 window.closeInfoModal = function() {
-document.getElementById('info-modal').style.display = 'none';
+const modal = document.getElementById('info-modal');
+if(modal) modal.style.display = 'none';
 };
 
 window.downloadCurrentGalleryItem = function() {
 const item = window.currentGalleryList[window.currentGalleryIndex];
 if (item && item.url) {
-downloadSingleItem(item);
+window.downloadSingleItem(item);
 } else if (item && item.category === 'text') {
 const blob = new Blob([item.textContent], { type: 'text/plain' });
 const url = URL.createObjectURL(blob);
@@ -1298,17 +1352,16 @@ document.body.removeChild(a);
 }
 };
 
-// Handle Mobile Back Button Hardware Press
 window.addEventListener('popstate', (event) => {
 closeGalleryModal();
 closeInfoModal();
 });
 
-// Touch Swipe Support for Gallery
 let touchstartX = 0;
 let touchendX = 0;
 
 const galleryBody = document.getElementById('gallery-viewer-body');
+if (galleryBody) {
 galleryBody.addEventListener('touchstart', e => {
 touchstartX = e.changedTouches[0].screenX;
 }, { passive: true });
@@ -1317,6 +1370,7 @@ galleryBody.addEventListener('touchend', e => {
 touchendX = e.changedTouches[0].screenX;
 handleSwipeGesture();
 }, { passive: true });
+}
 
 function handleSwipeGesture() {
 if (touchendX < touchstartX - 50) {
@@ -1328,6 +1382,7 @@ plusGalleryIndex(-1);
 }
 
 window.downloadSingleItem = function(item) {
+if(!item || !item.url) return;
 const a = document.createElement('a');
 a.href = item.url;
 a.download = item.name;
@@ -1339,7 +1394,7 @@ document.body.removeChild(a);
 
 window.downloadSelectedFiles = function() {
 window.vaultItems.filter(item => window.selectedItemIds.includes(item.id)).forEach(item => {
-downloadSingleItem(item);
+window.downloadSingleItem(item);
 });
 };
 
@@ -1349,12 +1404,12 @@ const selectionActions = document.getElementById('selection-actions');
 const countText = document.getElementById('selected-count');
 
 if (window.isSelectionMode) {
-normalActions.style.display = 'none';
-selectionActions.style.display = 'block';
-countText.innerText = Selected: ${window.selectedItemIds.length};
+if(normalActions) normalActions.style.display = 'none';
+if(selectionActions) selectionActions.style.display = 'block';
+if(countText) countText.innerText = `Selected: ${window.selectedItemIds.length}`;
 } else {
-normalActions.style.display = 'block';
-selectionActions.style.display = 'none';
+if(normalActions) normalActions.style.display = 'block';
+if(selectionActions) selectionActions.style.display = 'none';
 }
 };
 </script>
