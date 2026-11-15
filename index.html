@@ -1,1417 +1,729 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RONOCK</title>
-<link rel="icon" type="image/png" href="https://i.ibb.co/JRrxsJps/image.png">
-<style>
-* {
-box-sizing: border-box;
-margin: 0;
-padding: 0;
-font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
--webkit-tap-highlight-color: transparent;
-}
-
-body {
-background-color: #f4f6f8;
-display: flex;
-flex-direction: column;
-min-height: 100vh;
-user-select: none;
--webkit-user-select: none;
-}
-
-/* Strict Login Screen Styles */
-#login-screen {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: #16a085;
-display: flex;
-justify-content: center;
-align-items: center;
-z-index: 99999;
-}
-
-.login-box {
-background: white;
-padding: 30px 25px;
-border-radius: 12px;
-box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-width: 90%;
-max-width: 350px;
-text-align: center;
-}
-
-.login-box h2 {
-color: #1abc9c;
-margin-bottom: 8px;
-font-size: 22px;
-font-weight: bold;
-}
-
-.login-box p {
-color: #7f8c8d;
-font-size: 13px;
-margin-bottom: 20px;
-}
-
-.input-field {
-width: 100%;
-padding: 12px;
-margin-bottom: 12px;
-border: 1px solid #bdc3c7;
-border-radius: 6px;
-font-size: 14px;
-outline: none;
-}
-
-.input-field:focus {
-border-color: #1abc9c;
-}
-
-.login-btn {
-width: 100%;
-padding: 12px;
-background: #1abc9c;
-color: white;
-border: none;
-border-radius: 6px;
-font-size: 15px;
-font-weight: bold;
-cursor: pointer;
-}
-
-.login-btn:hover {
-background: #16a085;
-}
-
-.error-msg {
-color: #e74c3c;
-font-size: 12px;
-margin-bottom: 10px;
-display: none;
-}
-
-/* Vault Interface Styles */
-.top-header {
-background-color: #1abc9c;
-color: white;
-padding: 15px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-}
-
-.logo {
-font-size: 20px;
-font-weight: bold;
-}
-
-.status-badge {
-font-size: 11px;
-background: #16a085;
-padding: 4px 8px;
-border-radius: 12px;
-}
-
-.logout-btn {
-background: #e74c3c;
-color: white;
-border: none;
-padding: 5px 12px;
-border-radius: 12px;
-font-size: 11px;
-font-weight: bold;
-cursor: pointer;
-margin-left: 8px;
-}
-
-.menu-bar {
-background-color: #16a085;
-display: flex;
-overflow-x: auto;
-padding: 10px 5px;
-align-items: center;
-}
-
-.menu-item {
-color: white;
-text-decoration: none;
-padding: 8px 14px;
-white-space: nowrap;
-font-size: 13px;
-border-radius: 4px;
-margin-right: 5px;
-cursor: pointer;
-}
-
-.menu-item.active {
-background-color: #f39c12;
-font-weight: bold;
-}
-
-.action-bar {
-display: flex;
-justify-content: space-between;
-align-items: center;
-padding: 12px 15px;
-background-color: #e0f2f1;
-min-height: 55px;
-flex-wrap: wrap;
-gap: 10px;
-}
-
-.btn {
-padding: 8px 14px;
-border: none;
-border-radius: 4px;
-font-weight: bold;
-cursor: pointer;
-font-size: 13px;
-}
-
-.btn-import {
-background-color: #1abc9c;
-color: white;
-display: inline-block;
-}
-
-.btn-create-note {
-background-color: #f39c12;
-color: white;
-margin-left: 8px;
-display: none;
-}
-
-.btn-download {
-background-color: #3498db;
-color: white;
-}
-
-.btn-delete {
-background-color: #e74c3c;
-color: white;
-margin-left: 5px;
-}
-
-.btn-cancel {
-background-color: #7f8c8d;
-color: white;
-margin-left: 5px;
-}
-
-.btn-select-all {
-background-color: #9b59b6;
-color: white;
-margin-left: 5px;
-}
-
-.btn-secret-action {
-background-color: #8e44ad;
-color: white;
-margin-left: 5px;
-display: none;
-}
-
-.main-container {
-padding: 15px;
-flex: 1;
-}
-
-.grid-layout {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-gap: 15px;
-}
-
-.card {
-background: white;
-border-radius: 8px;
-padding: 8px;
-box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-position: relative;
-text-align: center;
-cursor: pointer;
-border: 2px solid transparent;
-transition: all 0.2s ease;
-}
-
-.card.selected {
-border: 2px solid #3498db;
-background-color: #ebf5fb;
-}
-
-.checkbox-circle {
-position: absolute;
-top: 10px;
-left: 10px;
-width: 22px;
-height: 22px;
-border-radius: 50%;
-border: 2px solid #bdc3c7;
-background: rgba(255, 255, 255, 0.8);
-display: none;
-align-items: center;
-justify-content: center;
-z-index: 5;
-}
-
-.selection-mode .checkbox-circle {
-display: flex;
-}
-
-.card.selected .checkbox-circle {
-background: #3498db;
-border-color: #3498db;
-}
-
-.card.selected .checkbox-circle::after {
-content: '✓';
-color: white;
-font-size: 14px;
-font-weight: bold;
-}
-
-.preview-box {
-width: 100%;
-height: 110px;
-background-color: #1a1a1a;
-border-radius: 6px;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-margin-bottom: 8px;
-overflow: hidden;
-font-size: 30px;
-position: relative;
-}
-
-.preview-box img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-pointer-events: none;
-}
-
-.video-thumb-container {
-width: 100%;
-height: 100%;
-position: relative;
-display: flex;
-align-items: center;
-justify-content: center;
-background: #000;
-}
-
-.video-thumb-container img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-position: absolute;
-top: 0;
-left: 0;
-opacity: 0.85;
-}
-
-.play-icon {
-font-size: 24px;
-background: rgba(0, 0, 0, 0.6);
-width: 36px;
-height: 36px;
-border-radius: 50%;
-display: flex;
-align-items: center;
-justify-content: center;
-border: 2px solid white;
-color: white;
-z-index: 2;
-}
-
-.audio-preview {
-width: 100%;
-padding: 5px;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-gap: 5px;
-}
-
-.audio-preview audio {
-width: 100%;
-height: 35px;
-}
-
-.note-card-preview {
-font-size: 11px;
-color: #555;
-text-align: left;
-padding: 8px;
-width: 100%;
-height: 100%;
-background: #fffde7;
-border: 1px solid #fff59d;
-border-radius: 4px;
-overflow: hidden;
-word-break: break-word;
-}
-
-.card-title-container {
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 4px;
-}
-
-.card-title {
-font-size: 12px;
-color: #333;
-word-break: break-all;
-height: 16px;
-overflow: hidden;
-font-weight: bold;
-flex: 1;
-text-align: left;
-}
-
-.rename-icon {
-font-size: 11px;
-cursor: pointer;
-color: #7f8c8d;
-padding: 2px;
-}
-
-.rename-icon:hover {
-color: #3498db;
-}
-
-/* Full-Screen Samsung Gallery Viewer Styles */
-.gallery-modal {
-display: none;
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: #000000;
-z-index: 2000;
-flex-direction: column;
-justify-content: space-between;
-}
-
-.gallery-top-bar {
-display: flex;
-justify-content: space-between;
-align-items: center;
-padding: 12px 16px;
-background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0));
-color: white;
-z-index: 10;
-}
-
-.gallery-back-btn {
-background: none;
-border: none;
-color: white;
-font-size: 24px;
-cursor: pointer;
-padding: 4px 8px;
-display: flex;
-align-items: center;
-justify-content: center;
-}
-
-.gallery-title {
-font-size: 14px;
-max-width: 50%;
-overflow: hidden;
-text-overflow: ellipsis;
-white-space: nowrap;
-font-weight: 500;
-}
-
-.gallery-right-actions {
-display: flex;
-align-items: center;
-gap: 12px;
-}
-
-.gallery-action-btn {
-background: none;
-border: none;
-color: white;
-font-size: 20px;
-cursor: pointer;
-padding: 4px;
-}
-
-.gallery-viewer-body {
-flex: 1;
-display: flex;
-align-items: center;
-justify-content: center;
-position: relative;
-overflow: hidden;
-width: 100%;
-height: 100%;
-}
-
-.gallery-viewer-body img,
-.gallery-viewer-body video {
-max-width: 100%;
-max-height: 100%;
-object-fit: contain;
-}
-
-.gallery-nav-btn {
-position: absolute;
-top: 50%;
-transform: translateY(-50%);
-background: rgba(255, 255, 255, 0.2);
-color: white;
-border: none;
-width: 45px;
-height: 45px;
-border-radius: 50%;
-font-size: 20px;
-cursor: pointer;
-display: flex;
-align-items: center;
-justify-content: center;
-z-index: 5;
-transition: background 0.2s;
-}
-
-.gallery-nav-btn:hover {
-background: rgba(255, 255, 255, 0.4);
-}
-
-.gallery-prev {
-left: 15px;
-}
-
-.gallery-next {
-right: 15px;
-}
-
-/* Modal Popup General */
-.modal {
-display: none;
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: rgba(0, 0, 0, 0.85);
-z-index: 2500;
-justify-content: center;
-align-items: center;
-}
-
-.modal-content-box {
-background: white;
-border-radius: 12px;
-padding: 20px;
-width: 90%;
-max-width: 400px;
-text-align: center;
-position: relative;
-box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-}
-
-.modal-content-box h3 {
-margin-bottom: 12px;
-color: #2c3e50;
-font-size: 18px;
-}
-
-.modal-content-box p {
-font-size: 13px;
-color: #7f8c8d;
-margin-bottom: 15px;
-line-height: 1.5;
-}
-
-.info-details-list {
-text-align: left;
-font-size: 13px;
-color: #333;
-background: #f8f9fa;
-padding: 12px;
-border-radius: 8px;
-margin-bottom: 15px;
-word-break: break-all;
-}
-
-.info-details-list div {
-margin-bottom: 8px;
-}
-
-.info-details-list strong {
-color: #1abc9c;
-}
-
-.note-modal-content {
-background: #fffbf0;
-border-radius: 12px;
-width: 92%;
-max-width: 550px;
-padding: 0;
-overflow: hidden;
-box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-}
-
-.note-modal-header {
-background: #f7f1e3;
-padding: 12px 18px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-border-bottom: 1px solid #eccc68;
-}
-
-.note-modal-body {
-padding: 15px;
-display: flex;
-flex-direction: column;
-gap: 10px;
-}
-
-.note-title-input {
-width: 100%;
-border: none;
-background: transparent;
-font-size: 18px;
-font-weight: bold;
-outline: none;
-color: #2c3e50;
-border-bottom: 1px solid #e0e0e0;
-padding-bottom: 8px;
-}
-
-.note-textarea {
-width: 100%;
-height: 250px;
-border: none;
-background: transparent;
-font-size: 15px;
-outline: none;
-resize: none;
-color: #333;
-line-height: 1.6;
-}
-
-.loader {
-font-size: 14px;
-color: #7f8c8d;
-text-align: center;
-margin-top: 50px;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>RONOCK - Permanent Cloud Vault</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f4f7f6;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .one-ui-card {
+      border-radius: 26px;
+      background: #ffffff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: #10b981; }
+      50% { border-color: #34d399; }
+    }
+    .uploading-badge {
+      animation: pulse-border 1.5s infinite;
+    }
+  </style>
 </head>
-<body>
-
-<!-- Strict Login Screen -->
-<div id="login-screen">
-<div class="login-box">
-<h2>RONOCK CHERAGEE</h2>
-<p>SCHOOL MEMORIES</p>
-<div id="login-error" class="error-msg">Incorrect Username or Password!</div>
-<input type="text" id="username-input" class="input-field" placeholder="Username" autocomplete="off" autocapitalize="off">
-<input type="password" id="password-input" class="input-field" placeholder="Password" autocomplete="off">
-<button class="login-btn" onclick="handleLogin()">Unlock Vault</button>
-</div>
-</div>
-
-<!-- Dashboard View -->
-<div id="app-content" style="display: none;">
-<div class="top-header">
-<div class="logo">RONOCK</div>
-<div>
-<span class="status-badge" id="sync-status">Cloud Sync Active ☁️</span>
-<button class="logout-btn" onclick="handleLogout()">Logout 🔒</button>
-</div>
-</div>
-
-<div class="menu-bar">
-<div class="menu-item active" onclick="switchCategory('all', this)">Dashboard</div>
-<div class="menu-item" onclick="switchCategory('image', this)">Picture</div>
-<div class="menu-item" onclick="switchCategory('video', this)">Video</div>
-<div class="menu-item" onclick="switchCategory('audio', this)">Voice</div>
-<div class="menu-item" onclick="switchCategory('text', this)">Text</div>
-<div class="menu-item" onclick="switchCategory('secret', this)">🔑 Secret</div>
-</div>
-
-<div class="action-bar">
-<div id="normal-actions">
-<label for="file-import" class="btn btn-import">+ Import File</label>
-<input type="file" id="file-import" multiple style="display: none;" onchange="handleMultipleImport(event)">
-<button class="btn btn-create-note" id="create-note-btn" onclick="openNoteEditor()">+ Write Note</button>
-</div>
-
-<div id="selection-actions" style="display: none; width: 100%;">
-<span id="selected-count" style="font-weight: bold; font-size: 14px; color: #2c3e50;">Selected: 0</span>
-<div style="float: right;">
-<button class="btn btn-select-all" onclick="selectAllItems()">Select All</button>
-<button class="btn btn-secret-action" id="moveToSecretBtn" onclick="promptMoveToSecret()" style="display:inline-block;">Move to Secret</button>
-<button class="btn btn-download" onclick="downloadSelectedFiles()">Download</button>
-<button class="btn btn-delete" onclick="deleteSelected()">Delete</button>
-<button class="btn btn-cancel" onclick="exitSelectionMode()">Cancel</button>
-</div>
-</div>
-</div>
-
-<div class="main-container">
-<div class="grid-layout" id="media-grid">
-<div class="loader">Loading cloud files...</div>
-</div>
-</div>
-</div>
-
-<!-- Full-Screen Samsung Gallery Viewer Modal -->
-<div id="gallery-modal" class="gallery-modal">
-<div class="gallery-top-bar">
-<button class="gallery-back-btn" onclick="closeGalleryModal()">⬅</button>
-<div id="gallery-title" class="gallery-title">FileName</div>
-<div class="gallery-right-actions">
-<button class="gallery-action-btn" onclick="showMediaDetails()" title="Info">ℹ️</button>
-<button class="gallery-action-btn" onclick="downloadCurrentGalleryItem()" title="Download">💾</button>
-</div>
-</div>
-<div class="gallery-viewer-body" id="gallery-viewer-body">
-<button class="gallery-nav-btn gallery-prev" onclick="plusGalleryIndex(-1)">❮</button>
-<div id="gallery-content-area" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
-<button class="gallery-nav-btn gallery-next" onclick="plusGalleryIndex(1)">❯</button>
-</div>
-</div>
-
-<!-- Media Details (Info ℹ️) Modal -->
-<div id="info-modal" class="modal" onclick="closeInfoModal()">
-<div class="modal-content-box" onclick="event.stopPropagation()">
-<h3>Media Details ℹ️</h3>
-<div id="info-details-content" class="info-details-list"></div>
-<button class="btn btn-import" style="width: 100%;" onclick="closeInfoModal()">Close</button>
-</div>
-</div>
-
-<!-- Secret PIN Prompt Modal (Used for Tab Access & Moving Files) -->
-<div id="pin-modal" class="modal">
-<div class="modal-content-box">
-<h3>Enter Secret PIN 🔑</h3>
-<p id="pin-modal-desc">Enter PIN to access or move protected files</p>
-<input type="password" id="secret-pin-input" class="input-field" maxlength="4" placeholder="4-Digit PIN" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
-<div style="display: flex; gap: 10px;">
-<button class="btn btn-cancel" style="flex:1;" onclick="cancelPinPrompt()">Cancel</button>
-<button class="btn btn-import" style="flex:1;" onclick="verifySecretPin()">Unlock</button>
-</div>
-</div>
-</div>
-
-<!-- Note Pad Modal -->
-<div id="note-modal" class="modal" onclick="closeNoteModal()">
-<div class="note-modal-content" onclick="event.stopPropagation()">
-<div class="note-modal-header">
-<span style="font-weight: bold; color: #84817a; font-size: 14px;">Samsung Note Pad</span>
-<div>
-<button class="btn btn-import" onclick="saveNote()">Save Note</button>
-<span class="close-btn" style="font-size:22px; cursor:pointer; margin-left:10px;" onclick="closeNoteModal()">×</span>
-</div>
-</div>
-<div class="note-modal-body">
-<input type="text" id="note-title" class="note-title-input" placeholder="Title...">
-<textarea id="note-content" class="note-textarea" placeholder="Start typing your note here..."></textarea>
-</div>
-</div>
-</div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-const DEFAULT_USERNAME = "RONOCK";
-const DEFAULT_PASSWORD = "@Ronock.268841";
-const DEFAULT_SECRET_PIN = "2688";
-
-const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
-const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
-
-window.vaultItems = [];
-window.selectedItemIds = [];
-window.currentCategory = 'all';
-window.isSelectionMode = false;
-window.holdTimer = null;
-window.editingNoteDocId = null;
-window.currentGalleryList = [];
-window.currentGalleryIndex = 0;
-
-let db = null;
-let memoriesRef = null;
-
-// Initialize Firebase Immediately on load
-try {
-const firebaseConfig = {
-apiKey: "AiZaSyC8lXOMiVERVibJAsVOu-31F...",
-authDomain: "my-memory-vault-630b3.firebaseapp.com",
-databaseURL: "https://my-memory-vault-630b3-default-rtdb.firebaseio.com",
-projectId: "my-memory-vault-630b3",
-storageBucket: "my-memory-vault-630b3.appspot.com",
-messagingSenderId: "31545523452",
-appId: "1:31545523452:web:aadaa50f7a7571c8beeb79",
-measurementId: "G-QMBXSZD2EV"
-};
-const app = initializeApp(firebaseConfig);
-db = getFirestore(app);
-memoriesRef = collection(db, "memories");
-} catch(e) {
-console.error("Firebase init error:", e);
-}
-
-window.handleLogin = function() {
-const u = document.getElementById('username-input').value.trim();
-const p = document.getElementById('password-input').value.trim();
-
-if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
-sessionStorage.setItem('ronock_active_session', 'true');
-showVaultAndInitFirebase();
-} else {
-const err = document.getElementById('login-error');
-if(err) err.style.display = 'block';
-}
-};
-
-window.handleLogout = function() {
-sessionStorage.removeItem('ronock_active_session');
-sessionStorage.removeItem('secret_unlocked');
-location.reload();
-};
-
-function showVaultAndInitFirebase() {
-const loginScreen = document.getElementById('login-screen');
-const appContent = document.getElementById('app-content');
-if(loginScreen) loginScreen.style.display = 'none';
-if(appContent) appContent.style.display = 'block';
-
-if (db && memoriesRef) {
-onSnapshot(memoriesRef, (snapshot) => {
-window.vaultItems = snapshot.docs.map(d => ({
-docId: d.id,
-...d.data()
-}));
-const badge = document.getElementById('sync-status');
-if(badge) badge.innerText = "Cloud Sync Active ☁️";
-renderGrid();
-}, (error) => {
-const badge = document.getElementById('sync-status');
-if(badge) badge.innerText = "Cloud Sync Active ☁️";
-renderGrid();
-});
-} else {
-renderGrid();
-}
-}
-
-// Auto login if session active
-if (sessionStorage.getItem('ronock_active_session') === 'true') {
-showVaultAndInitFirebase();
-}
-
-function getOptimizedMediaUrl(url, category) {
-if (!url) return '';
-if (category === 'video' && url.includes('/upload/')) {
-return url.replace('/upload/', '/upload/f_auto,q_auto/');
-}
-if (category === 'image' && url.includes('/upload/')) {
-return url.replace('/upload/', '/upload/w_300,c_scale,q_auto,f_auto/');
-}
-return url;
-}
-
-let lastIndex = -1;
-function getVideoThumbnailUrl(url) {
-if (!url) return '';
-if (url.includes('/upload/')) {
-let thumb = url.replace('/upload/', '/upload/w_300,c_fill,so_0,f_jpg,q_auto/');
-lastIndex = thumb.lastIndexOf('.');
-if (lastIndex !== -1) {
-thumb = thumb.substring(0, lastIndex) + '.jpg';
-}
-return thumb;
-}
-return url;
-}
-
-function uploadSingleFile(file, fileIndex, totalFiles) {
-return new Promise((resolve, reject) => {
-let fileCategory = 'text';
-if (file.type.startsWith('image/')) fileCategory = 'image';
-else if (file.type.startsWith('video/') || file.name.endsWith('.MOV') || file.name.endsWith('.mov')) fileCategory = 'video';
-else if (file.type.startsWith('audio/')) fileCategory = 'audio';
-
-let resourceType = 'auto';
-if (fileCategory === 'video' || fileCategory === 'audio') {
-resourceType = 'video';
-} else if (fileCategory === 'image') {
-resourceType = 'image';
-} else {
-resourceType = 'raw';
-}
-
-const formData = new FormData();
-formData.append('file', file);
-formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-const xhr = new XMLHttpRequest();
-const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`;
-
-xhr.open('POST', uploadUrl, true);
-
-xhr.upload.onprogress = (e) => {
-if (e.lengthComputable) {
-const progress = Math.round((e.loaded / e.total) * 100);
-const statusBadge = document.getElementById('sync-status');
-if(statusBadge) statusBadge.innerText = `Uploading [${fileIndex + 1}/${totalFiles}]: ${progress}% ⏳`;
-}
-};
-
-xhr.onload = async () => {
-if (xhr.status === 200) {
-const res = JSON.parse(xhr.responseText);
-
-const existingItem = window.vaultItems.find(item =>
-item.name === file.name && item.fileSize === file.size
-);
-
-let isOverwritten = false;
-if (existingItem && existingItem.docId && db) {
-const docRef = doc(db, "memories", existingItem.docId);
-await updateDoc(docRef, {
-url: res.secure_url,
-publicId: res.public_id,
-type: file.type,
-fileSize: file.size,
-createdAt: new Date().toISOString()
-});
-isOverwritten = true;
-} else if (memoriesRef) {
-await addDoc(memoriesRef, {
-id: Date.now() + Math.random(),
-name: file.name,
-url: res.secure_url,
-publicId: res.public_id,
-type: file.type,
-fileSize: file.size || 0,
-category: fileCategory,
-isSecret: window.currentCategory === 'secret',
-textContent: '',
-createdAt: new Date().toISOString()
-});
-}
-resolve({ success: true, overwritten: isOverwritten });
-} else {
-reject(new Error("Cloudinary error"));
-}
-};
-
-xhr.onerror = () => reject(new Error("Network error"));
-xhr.send(formData);
-});
-}
-
-window.handleMultipleImport = async function(event) {
-const files = event.target.files;
-if (!files || files.length === 0 || !memoriesRef) return;
-
-const fileArray = Array.from(files);
-const totalFiles = fileArray.length;
-let newCount = 0;
-let overwrittenCount = 0;
-
-for (let i = 0; i < totalFiles; i++) {
-try {
-const result = await uploadSingleFile(fileArray[i], i, totalFiles);
-if (result.overwritten) {
-overwrittenCount++;
-} else {
-newCount++;
-}
-} catch (err) {
-console.error("Error uploading file:", err);
-}
-}
-
-const statusBadge = document.getElementById('sync-status');
-if(statusBadge) statusBadge.innerText = "Cloud Sync Active ☁️";
-event.target.value = '';
-
-alert(`Upload Finished!\n✅ ${newCount} New files uploaded\n🔄 ${overwrittenCount} Files updated/overwritten`);
-};
-
-window.saveNote = async function() {
-if(!memoriesRef) return;
-const titleInput = document.getElementById('note-title');
-const contentInput = document.getElementById('note-content');
-if(!titleInput || !contentInput) return;
-
-const title = titleInput.value.trim() || 'Untitled Note';
-const content = contentInput.value;
-
-try {
-if (window.editingNoteDocId && db) {
-const docRef = doc(db, "memories", window.editingNoteDocId);
-await updateDoc(docRef, {
-name: title.endsWith('.txt') ? title : title + '.txt',
-textContent: content
-});
-} else {
-await addDoc(memoriesRef, {
-id: Date.now() + Math.random(),
-name: title.endsWith('.txt') ? title : title + '.txt',
-url: '',
-type: 'text/plain',
-category: 'text',
-isSecret: window.currentCategory === 'secret',
-textContent: content,
-createdAt: new Date().toISOString()
-});
-}
-closeNoteModal();
-} catch(err) {
-alert("Failed to save note: " + err.message);
-}
-};
-
-window.renameItem = async function(event, docId, currentName) {
-event.stopPropagation();
-const newName = prompt("Enter new name:", currentName);
-if (newName && newName.trim() !== "" && newName !== currentName && db) {
-try {
-const docRef = doc(db, "memories", docId);
-await updateDoc(docRef, { name: newName.trim() });
-} catch(err) {
-alert("Failed to rename: " + err.message);
-}
-}
-};
-
-window.selectAllItems = function() {
-const filteredItems = getFilteredItems();
-window.selectedItemIds = filteredItems.map(item => item.id);
-renderGrid();
-};
-
-window.deleteSelected = async function() {
-if(!db) return;
-if(!confirm("Are you sure you want to delete selected items?")) return;
-const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
-for (const item of selectedDocs) {
-if (item.docId) {
-await deleteDoc(doc(db, "memories", item.docId));
-}
-}
-window.selectedItemIds = [];
-window.isSelectionMode = false;
-renderGrid();
-};
-
-// --- Secret PIN Lock & Management Logic ---
-let pendingCategoryElement = null;
-let pendingActionType = null;
-
-window.switchCategory = function(category, element) {
-if (category === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
-pendingCategoryElement = element;
-pendingActionType = 'switch';
-openPinPrompt();
-return;
-}
-
-window.currentCategory = category;
-document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-if(element) element.classList.add('active');
-
-const createNoteBtn = document.getElementById('create-note-btn');
-if (createNoteBtn) {
-if (category === 'text' || category === 'secret') {
-createNoteBtn.style.display = 'inline-block';
-} else {
-createNoteBtn.style.display = 'none';
-}
-}
-
-renderGrid();
-};
-
-function openPinPrompt() {
-const pinInput = document.getElementById('secret-pin-input');
-if(pinInput) pinInput.value = '';
-const pinModal = document.getElementById('pin-modal');
-if(pinModal) pinModal.style.display = 'flex';
-}
-
-window.cancelPinPrompt = function() {
-const pinModal = document.getElementById('pin-modal');
-if(pinModal) pinModal.style.display = 'none';
-pendingActionType = null;
-};
-
-window.verifySecretPin = function() {
-const pinInput = document.getElementById('secret-pin-input');
-if(!pinInput) return;
-const pinVal = pinInput.value.trim();
-
-if (pinVal === DEFAULT_SECRET_PIN) {
-sessionStorage.setItem('secret_unlocked', 'true');
-const pinModal = document.getElementById('pin-modal');
-if(pinModal) pinModal.style.display = 'none';
-
-if (pendingActionType === 'switch') {
-window.switchCategory('secret', pendingCategoryElement);
-} else if (pendingActionType === 'move') {
-executeMoveToSecret();
-}
-pendingActionType = null;
-} else {
-alert("Incorrect PIN!");
-pinInput.value = '';
-}
-};
-
-window.promptMoveToSecret = function() {
-if (window.selectedItemIds.length === 0) return;
-
-if (window.currentCategory === 'secret') {
-executeMoveToSecret();
-} else {
-pendingActionType = 'move';
-openPinPrompt();
-}
-};
-
-async function executeMoveToSecret() {
-if (!db || window.selectedItemIds.length === 0) return;
-const targetSecretState = window.currentCategory !== 'secret';
-
-const selectedDocs = window.vaultItems.filter(item => window.selectedItemIds.includes(item.id));
-for (const item of selectedDocs) {
-if (item.docId) {
-const docRef = doc(db, "memories", item.docId);
-await updateDoc(docRef, { isSecret: targetSecretState });
-}
-}
-window.selectedItemIds = [];
-window.isSelectionMode = false;
-renderGrid();
-alert(targetSecretState ? "Moved selected files to Secret Vault 🔑" : "Restored selected files to Normal Vault 📂");
-}
-
-function getFilteredItems() {
-if (window.currentCategory === 'secret') {
-return window.vaultItems.filter(item => item.isSecret);
-} else if (window.currentCategory === 'all') {
-return window.vaultItems.filter(item => !item.isSecret);
-} else {
-return window.vaultItems.filter(item => item.category === window.currentCategory && !item.isSecret);
-}
-}
-
-window.renderGrid = function() {
-const grid = document.getElementById('media-grid');
-if(!grid) return;
-grid.innerHTML = '';
-
-const moveBtn = document.getElementById('moveToSecretBtn');
-if (window.isSelectionMode) {
-grid.classList.add('selection-mode');
-if(moveBtn) moveBtn.innerText = window.currentCategory === 'secret' ? 'Unsecret' : 'Move to Secret';
-} else {
-grid.classList.remove('selection-mode');
-}
-
-const filteredItems = getFilteredItems();
-
-if(filteredItems.length === 0) {
-grid.innerHTML = `<div class="loader">No items in ${window.currentCategory} category yet.</div>`;
-updateActionBar();
-return;
-}
-
-filteredItems.forEach(item => {
-const card = document.createElement('div');
-const isSelected = window.selectedItemIds.includes(item.id);
-card.className = `card ${isSelected ? 'selected' : ''}`;
-
-let previewHTML = '';
-if (item.category === 'image') {
-const thumbUrl = getOptimizedMediaUrl(item.url, 'image');
-previewHTML = `<img src="${thumbUrl}" loading="lazy">`;
-} else if (item.category === 'video') {
-const thumbUrl = getVideoThumbnailUrl(item.url);
-previewHTML = `
-<div class="video-thumb-container">
-<img src="${thumbUrl}" loading="lazy">
-<div class="play-icon">▶</div>
-</div>`;
-} else if (item.category === 'audio') {
-previewHTML = `
-<div class="audio-preview">
-<span style="font-size:24px;">🎙</span>
-<audio src="${item.url}" controls preload="none" onclick="event.stopPropagation()"></audio>
-</div>`;
-} else {
-const textPreview = item.textContent ? item.textContent : 'Text Document';
-previewHTML = `<div class="note-card-preview">${textPreview}</div>`;
-}
-
-card.innerHTML = `
-<div class="checkbox-circle"></div>
-<div class="preview-box">${previewHTML}</div>
-<div class="card-title-container">
-<div class="card-title">${item.name}</div>
-<span class="rename-icon" title="Rename" onclick="renameItem(event, '${item.docId}', '${item.name}')">✏</span>
-</div>`;
-
-const startHold = () => {
-window.holdTimer = setTimeout(() => {
-if (!window.isSelectionMode) {
-window.isSelectionMode = true;
-toggleSelectItem(item.id);
-}
-}, 1000);
-};
-
-const clearHold = () => {
-if (window.holdTimer) clearTimeout(window.holdTimer);
-};
-
-card.addEventListener('touchstart', startHold, { passive: true });
-card.addEventListener('touchend', clearHold);
-card.addEventListener('touchmove', clearHold);
-
-card.addEventListener('mousedown', startHold);
-card.addEventListener('mouseup', clearHold);
-card.addEventListener('mouseleave', clearHold);
-
-card.addEventListener('click', (e) => {
-if (e.target.classList.contains('rename-icon')) return;
-if (window.isSelectionMode) {
-toggleSelectItem(item.id);
-} else if (item.category !== 'audio') {
-openGalleryModal(filteredItems, item);
-}
-});
-
-grid.appendChild(card);
-});
-
-updateActionBar();
-};
-
-window.openNoteEditor = function(noteItem = null) {
-if (noteItem) {
-window.editingNoteDocId = noteItem.docId;
-const t = document.getElementById('note-title');
-const c = document.getElementById('note-content');
-if(t) t.value = noteItem.name.replace('.txt', '');
-if(c) c.value = noteItem.textContent;
-} else {
-window.editingNoteDocId = null;
-const t = document.getElementById('note-title');
-const c = document.getElementById('note-content');
-if(t) t.value = '';
-if(c) c.value = '';
-}
-const modal = document.getElementById('note-modal');
-if(modal) modal.style.display = 'flex';
-};
-
-window.closeNoteModal = function() {
-const modal = document.getElementById('note-modal');
-if(modal) modal.style.display = 'none';
-};
-
-window.toggleSelectItem = function(id) {
-if (window.selectedItemIds.includes(id)) {
-window.selectedItemIds = window.selectedItemIds.filter(itemId => itemId !== id);
-} else {
-window.selectedItemIds.push(id);
-}
-renderGrid();
-};
-
-window.exitSelectionMode = function() {
-window.isSelectionMode = false;
-window.selectedItemIds = [];
-renderGrid();
-};
-
-window.openGalleryModal = function(itemList, selectedItem) {
-window.currentGalleryList = itemList.filter(i => i.category === 'image' || i.category === 'video' || i.category === 'text');
-window.currentGalleryIndex = window.currentGalleryList.findIndex(i => i.id === selectedItem.id);
-if(window.currentGalleryIndex === -1) window.currentGalleryIndex = 0;
-
-const modal = document.getElementById('gallery-modal');
-if(modal) modal.style.display = 'flex';
-renderGalleryItem();
-history.pushState({ galleryOpen: true }, "");
-};
-
-window.closeGalleryModal = function() {
-const modal = document.getElementById('gallery-modal');
-if (modal && modal.style.display === 'flex') {
-modal.style.display = 'none';
-const video = document.getElementById('gallery-content-area').querySelector('video');
-if(video) video.pause();
-}
-};
-
-window.plusGalleryIndex = function(n) {
-window.currentGalleryIndex += n;
-if (window.currentGalleryIndex >= window.currentGalleryList.length) {
-window.currentGalleryIndex = 0;
-} else if (window.currentGalleryIndex < 0) {
-window.currentGalleryIndex = window.currentGalleryList.length - 1;
-}
-renderGalleryItem();
-};
-
-window.renderGalleryItem = function() {
-if (window.currentGalleryList.length === 0) return;
-const item = window.currentGalleryList[window.currentGalleryIndex];
-const titleEl = document.getElementById('gallery-title');
-if(titleEl) titleEl.innerText = item.name;
-
-const contentArea = document.getElementById('gallery-content-area');
-if(!contentArea) return;
-const playableUrl = getOptimizedMediaUrl(item.url, item.category);
-
-if (item.category === 'image') {
-contentArea.innerHTML = `<img src="${item.url}" style="max-width:100%; max-height:100%; object-fit:contain;">`;
-} else if (item.category === 'video') {
-contentArea.innerHTML = `<video src="${playableUrl}" controls autoplay style="max-width:100%; max-height:100%; object-fit:contain;"></video>`;
-} else if (item.category === 'text') {
-contentArea.innerHTML = `<div style="background:#fffbf0; color:#333; padding:20px; border-radius:8px; max-width:80%; max-height:80%; overflow-y:auto; text-align:left; font-size:16px; line-height:1.6;"><h3>${item.name}</h3><hr style="margin:10px 0;"><p>${item.textContent || ''}</p></div>`;
-}
-};
-
-window.showMediaDetails = function() {
-const item = window.currentGalleryList[window.currentGalleryIndex];
-if (!item) return;
-
-let formattedSize = "Unknown";
-if (item.fileSize) {
-const bytes = item.fileSize;
-if (bytes >= 1048576) formattedSize = (bytes / 1048576).toFixed(2) + " MB";
-else if (bytes >= 1024) formattedSize = (bytes / 1024).toFixed(2) + " KB";
-else formattedSize = bytes + " Bytes";
-}
-
-let uploadDate = "N/A";
-if (item.createdAt) {
-uploadDate = new Date(item.createdAt).toLocaleString();
-}
-
-const infoHTML = `
-<div><strong>File Name:</strong> ${item.name}</div>
-<div><strong>Category:</strong> ${item.category.toUpperCase()}</div>
-<div><strong>File Size:</strong> ${formattedSize}</div>
-<div><strong>MIME Type:</strong> ${item.type || 'N/A'}</div>
-<div><strong>Upload Date:</strong> ${uploadDate}</div>
-<div><strong>Secret Status:</strong> ${item.isSecret ? 'Protected 🔑' : 'Normal'}</div>
-`;
-
-const detailsContent = document.getElementById('info-details-content');
-if(detailsContent) detailsContent.innerHTML = infoHTML;
-const infoModal = document.getElementById('info-modal');
-if(infoModal) infoModal.style.display = 'flex';
-};
-
-window.closeInfoModal = function() {
-const modal = document.getElementById('info-modal');
-if(modal) modal.style.display = 'none';
-};
-
-window.downloadCurrentGalleryItem = function() {
-const item = window.currentGalleryList[window.currentGalleryIndex];
-if (item && item.url) {
-window.downloadSingleItem(item);
-} else if (item && item.category === 'text') {
-const blob = new Blob([item.textContent], { type: 'text/plain' });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = item.name;
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-}
-};
-
-window.addEventListener('popstate', (event) => {
-closeGalleryModal();
-closeInfoModal();
-});
-
-let touchstartX = 0;
-let touchendX = 0;
-
-const galleryBody = document.getElementById('gallery-viewer-body');
-if (galleryBody) {
-galleryBody.addEventListener('touchstart', e => {
-touchstartX = e.changedTouches[0].screenX;
-}, { passive: true });
-
-galleryBody.addEventListener('touchend', e => {
-touchendX = e.changedTouches[0].screenX;
-handleSwipeGesture();
-}, { passive: true });
-}
-
-function handleSwipeGesture() {
-if (touchendX < touchstartX - 50) {
-plusGalleryIndex(1);
-}
-if (touchendX > touchstartX + 50) {
-plusGalleryIndex(-1);
-}
-}
-
-window.downloadSingleItem = function(item) {
-if(!item || !item.url) return;
-const a = document.createElement('a');
-a.href = item.url;
-a.download = item.name;
-a.target = "_blank";
-document.body.appendChild(a);
-a.click();
-document.body.removeChild(a);
-};
-
-window.downloadSelectedFiles = function() {
-window.vaultItems.filter(item => window.selectedItemIds.includes(item.id)).forEach(item => {
-window.downloadSingleItem(item);
-});
-};
-
-window.updateActionBar = function() {
-const normalActions = document.getElementById('normal-actions');
-const selectionActions = document.getElementById('selection-actions');
-const countText = document.getElementById('selected-count');
-
-if (window.isSelectionMode) {
-if(normalActions) normalActions.style.display = 'none';
-if(selectionActions) selectionActions.style.display = 'block';
-if(countText) countText.innerText = `Selected: ${window.selectedItemIds.length}`;
-} else {
-if(normalActions) normalActions.style.display = 'block';
-if(selectionActions) selectionActions.style.display = 'none';
-}
-};
-</script>
+<body class="text-slate-800 pb-24">
+
+  <!-- Top One UI Header -->
+  <header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px] transition-all">
+    <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
+      <!-- Top Bar -->
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-extrabold tracking-wide">RONOCK</h1>
+          <span class="bg-emerald-800/60 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Cloud</span>
+        </div>
+
+        <!-- Live Upload Progress Pill -->
+        <div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge">
+          <i class="fa-solid fa-hourglass-half fa-spin text-amber-300"></i>
+          <span id="uploadStatusText">Uploading [0/0]: 0%</span>
+        </div>
+
+        <button onclick="handleLogout()" class="bg-rose-500 hover:bg-rose-600 active:scale-95 transition text-white text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+          <span>Logout</span>
+          <i class="fa-solid fa-lock text-[11px]"></i>
+        </button>
+      </div>
+
+      <!-- Multi-Select Action Bar -->
+      <div id="multiSelectBar" class="hidden items-center justify-between bg-emerald-900/90 px-4 py-2 rounded-2xl mb-2 text-sm">
+        <div class="flex items-center gap-3">
+          <button onclick="clearSelection()" class="text-emerald-200 hover:text-white">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+          <span id="selectedCount" class="font-bold">0 Selected</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="selectAllVisible()" class="text-xs bg-emerald-700 px-2.5 py-1 rounded-lg font-semibold">Select All</button>
+          <button onclick="deleteSelected()" class="bg-rose-500 hover:bg-rose-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+            <i class="fa-solid fa-trash"></i> Remove
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Tabs -->
+      <nav class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+        <button onclick="switchTab('all')" data-tab="all" class="tab-btn active bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap shadow-sm">
+          Dashboard
+        </button>
+        <button onclick="switchTab('image')" data-tab="image" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
+          Picture
+        </button>
+        <button onclick="switchTab('video')" data-tab="video" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
+          Video
+        </button>
+        <button onclick="switchTab('audio')" data-tab="audio" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
+          Voice
+        </button>
+        <button onclick="switchTab('text')" data-tab="text" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
+          Text
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-3xl mx-auto px-4 pt-5">
+    <!-- Action Controls -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <div class="flex items-center gap-2">
+        <label for="fileInput" class="cursor-pointer bg-[#10b981] hover:bg-emerald-600 active:scale-95 transition text-white font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i>
+          <span>Import File</span>
+        </label>
+        <input type="file" id="fileInput" multiple accept="image/*,video/*,audio/*,.txt,.pdf,.doc,.docx" class="hidden" onchange="handleFileSelect(event)" />
+
+        <button onclick="openTextModal()" class="bg-white hover:bg-slate-50 active:scale-95 transition text-emerald-700 border border-emerald-200 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>Add Note</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="syncFromCloud()" title="Refresh from Cloud" class="text-xs font-bold text-[#10b981] bg-white border border-emerald-200 px-3 py-2 rounded-xl hover:bg-emerald-50 active:scale-95 transition">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+        <button id="toggleSelectModeBtn" onclick="toggleSelectMode()" class="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 active:scale-95 transition">
+          <i class="fa-regular fa-square-check mr-1"></i> Select
+        </button>
+      </div>
+    </div>
+
+    <!-- Error / Setup Helper Banner -->
+    <div id="errorAlert" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl mb-4 text-xs flex items-start justify-between gap-2">
+      <div class="flex items-start gap-2">
+        <i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500"></i>
+        <span id="errorAlertText"></span>
+      </div>
+      <button onclick="document.getElementById('errorAlert').classList.add('hidden')" class="text-rose-400 hover:text-rose-600">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Loading Skeleton -->
+    <div id="loadingState" class="py-16 text-center text-slate-400">
+      <i class="fa-solid fa-cloud-arrow-down fa-bounce text-3xl text-[#10b981] mb-3"></i>
+      <p class="text-sm font-medium">Syncing permanent cloud vault...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden py-20 text-center">
+      <div class="w-16 h-16 bg-slate-200/70 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400 text-2xl">
+        <i class="fa-regular fa-folder-open"></i>
+      </div>
+      <p id="emptyText" class="text-slate-500 font-medium text-sm">No items in all category yet.</p>
+    </div>
+
+    <!-- Media Grid -->
+    <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
+  </main>
+
+  <!-- Add Text Note Modal -->
+  <div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+    <div class="one-ui-card w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-800">Save Permanent Text</h3>
+        <button onclick="closeTextModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <input type="text" id="noteTitle" placeholder="Title (e.g., Important Password / Note)" class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold mb-3 focus:outline-none focus:ring-2 focus:ring-[#10b981]" />
+      <textarea id="noteContent" rows="5" placeholder="Write your text here (saved to cloud forever)..." class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]"></textarea>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeTextModal()" class="px-4 py-2.5 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
+        <button onclick="saveTextNote()" id="saveNoteBtn" class="bg-[#10b981] text-white px-5 py-2.5 rounded-2xl text-sm font-bold shadow-sm hover:bg-emerald-600">Save to Cloud</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Details Modal -->
+  <div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+    <div class="one-ui-card w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-circle-info text-[#10b981]"></i> Cloud File Info
+        </h3>
+        <button onclick="closeInfoModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="infoDetails" class="space-y-2.5 text-sm bg-slate-50 p-4 rounded-2xl border border-slate-100"></div>
+      <div class="mt-5 flex justify-end gap-2">
+        <button id="infoDownloadBtn" class="bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-download"></i> Download
+        </button>
+        <button onclick="closeInfoModal()" class="bg-slate-800 text-white px-5 py-2.5 rounded-2xl text-sm font-bold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Preview Modal -->
+  <div id="previewModal" class="fixed inset-0 z-50 hidden flex-col bg-black/95 text-white">
+    <div class="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
+      <button onclick="closePreview()" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <span id="previewTitle" class="text-sm font-semibold truncate max-w-[60%]">Preview</span>
+      <div class="flex items-center gap-2">
+        <button id="previewInfoBtn" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+          <i class="fa-solid fa-info"></i>
+        </button>
+        <button id="previewDownloadBtn" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+          <i class="fa-solid fa-download"></i>
+        </button>
+      </div>
+    </div>
+    <div id="previewBody" class="flex-1 flex items-center justify-center p-4 overflow-auto"></div>
+  </div>
+
+  <!-- Permanent Cloud Sync Engine -->
+  <script>
+    const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
+    const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
+    const VAULT_TAG = "ronock_vault"; // Permanent tag for all your files
+
+    let allItems = [];
+    let hiddenIds = new Set(JSON.parse(localStorage.getItem("ronock_hidden_ids") || "[]"));
+    let currentTab = 'all';
+    let isSelectMode = false;
+    let selectedIds = new Set();
+    let isUploading = false;
+
+    // 1. FETCH ALL FILES DIRECTLY FROM CLOUDINARY CLOUD (WORKS ON ANY DEVICE FOREVER)
+    window.syncFromCloud = async function() {
+      const loadingEl = document.getElementById('loadingState');
+      loadingEl.classList.remove('hidden');
+
+      const types = ['image', 'video', 'raw'];
+      let fetchedItems = [];
+      let resourceListBlocked = false;
+
+      for (const rType of types) {
+        try {
+          // Cache-buster timestamp ensures fresh list every time
+          const listUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/list/${VAULT_TAG}.json?t=${Date.now()}`;
+          const res = await fetch(listUrl);
+
+          if (res.status === 401 || res.status === 403) {
+            resourceListBlocked = true;
+            continue;
+          }
+          if (!res.ok) continue;
+
+          const data = await res.json();
+          if (data && Array.isArray(data.resources)) {
+            data.resources.forEach(item => {
+              if (hiddenIds.has(item.public_id)) return;
+
+              const ext = item.format ? `.${item.format}` : '';
+              const cleanName = (item.context && item.context.custom && item.context.custom.caption)
+                ? item.context.custom.caption
+                : (item.public_id.split('/').pop() + ext);
+
+              const fileUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/upload/v${item.version}/${item.public_id}${ext}`;
+              const category = classifyResource(rType, item.format, item.context);
+
+              fetchedItems.push({
+                id: item.public_id,
+                name: cleanName,
+                url: fileUrl,
+                category: category,
+                resourceType: rType,
+                format: item.format || 'file',
+                width: item.width || null,
+                height: item.height || null,
+                bytes: item.bytes || 0,
+                createdAt: new Date(item.created_at).getTime(),
+                dateStr: new Date(item.created_at).toLocaleString()
+              });
+            });
+          }
+        } catch (err) {
+          console.warn(`List fetch warning for ${rType}:`, err);
+        }
+      }
+
+      if (resourceListBlocked && fetchedItems.length === 0) {
+        showError("Cloudinary 'Resource list' is currently locked! Go to Cloudinary Settings > Security > Restricted image types > UNCHECK 'Resource list' & Save so your files load across all devices.");
+      }
+
+      // Sort newest first
+      fetchedItems.sort((a, b) => b.createdAt - a.createdAt);
+      allItems = fetchedItems;
+
+      loadingEl.classList.add('hidden');
+      renderItems();
+    };
+
+    function classifyResource(rType, format, context) {
+      if (context && context.custom && context.custom.vault_cat) {
+        return context.custom.vault_cat;
+      }
+      const fmt = (format || "").toLowerCase();
+      if (rType === 'image') return 'image';
+      if (rType === 'video') {
+        if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt)) return 'audio';
+        return 'video';
+      }
+      return 'text';
+    }
+
+    // 2. SEQUENTIAL ONE-BY-ONE UPLOAD TO PERMANENT CLOUD
+    window.handleFileSelect = async function(event) {
+      const files = Array.from(event.target.files);
+      if (!files.length) return;
+      if (isUploading) {
+        alert("Upload already in progress. Please wait.");
+        return;
+      }
+
+      isUploading = true;
+      const statusPill = document.getElementById('uploadStatusPill');
+      const statusText = document.getElementById('uploadStatusText');
+      statusPill.classList.remove('hidden');
+      statusPill.classList.add('flex');
+
+      const total = files.length;
+
+      for (let i = 0; i < total; i++) {
+        const file = files[i];
+        const currentNum = i + 1;
+        statusText.textContent = `Uploading [${currentNum}/${total}]: 0%`;
+
+        try {
+          const cat = detectFileCategory(file.type, file.name);
+          const cloudData = await uploadSingleToCloudinary(file, file.name, cat, (percent) => {
+            if (percent < 100) {
+              statusText.textContent = `Uploading [${currentNum}/${total}]: ${percent}%`;
+            } else {
+              statusText.textContent = `Saving [${currentNum}/${total}]: 100%`;
+            }
+          });
+
+          const newItem = {
+            id: cloudData.public_id,
+            name: file.name,
+            url: cloudData.secure_url,
+            category: cat,
+            resourceType: cloudData.resource_type,
+            format: cloudData.format || '',
+            width: cloudData.width || null,
+            height: cloudData.height || null,
+            bytes: cloudData.bytes || file.size,
+            createdAt: Date.now(),
+            dateStr: new Date().toLocaleString()
+          };
+
+          allItems.unshift(newItem);
+          renderItems();
+
+        } catch (err) {
+          console.error(`Failed ${file.name}:`, err);
+          showError(`"${file.name}" failed: ${err.message}`);
+        }
+      }
+
+      isUploading = false;
+      event.target.value = "";
+      setTimeout(() => {
+        statusPill.classList.add('hidden');
+        statusPill.classList.remove('flex');
+      }, 1200);
+    };
+
+    function uploadSingleToCloudinary(fileBlob, originalName, category, onProgress) {
+      return new Promise((resolve, reject) => {
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+
+        formData.append("file", fileBlob, originalName);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        formData.append("tags", VAULT_TAG);
+        formData.append("context", `caption=${originalName}|vault_cat=${category}`);
+
+        xhr.timeout = 90000; // 90s timeout for large videos
+
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable && onProgress) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            onProgress(percent);
+          }
+        });
+
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                resolve(JSON.parse(xhr.responseText));
+              } catch (e) {
+                reject(new Error("Invalid response from server"));
+              }
+            } else {
+              let errMsg = `HTTP ${xhr.status}`;
+              try {
+                const errJson = JSON.parse(xhr.responseText);
+                if (errJson.error && errJson.error.message) errMsg = errJson.error.message;
+              } catch (_) {}
+              reject(new Error(errMsg));
+            }
+          }
+        };
+
+        xhr.ontimeout = () => reject(new Error("Network timeout"));
+        xhr.onerror = () => reject(new Error("Connection error"));
+
+        xhr.open("POST", url, true);
+        xhr.send(formData);
+      });
+    }
+
+    function detectFileCategory(mimeType, fileName) {
+      const m = (mimeType || "").toLowerCase();
+      const n = (fileName || "").toLowerCase();
+      if (m.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic)$/.test(n)) return "image";
+      if (m.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(n)) return "audio";
+      if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/.test(n)) return "video";
+      return "text";
+    }
+
+    // 3. SAVE TEXT NOTE AS PERMANENT CLOUD FILE
+    window.openTextModal = () => {
+      document.getElementById('textModal').classList.remove('hidden');
+      document.getElementById('textModal').classList.add('flex');
+    };
+    window.closeTextModal = () => {
+      document.getElementById('textModal').classList.add('hidden');
+      document.getElementById('textModal').classList.remove('flex');
+    };
+    window.saveTextNote = async () => {
+      const title = document.getElementById('noteTitle').value.trim() || "Note_" + Date.now();
+      const content = document.getElementById('noteContent').value.trim();
+      if (!content) return alert("Please write some text first.");
+
+      const btn = document.getElementById('saveNoteBtn');
+      btn.disabled = true;
+      btn.textContent = "Saving to Cloud...";
+
+      try {
+        const fileName = title.endsWith(".txt") ? title : `${title}.txt`;
+        const textBlob = new Blob([content], { type: "text/plain" });
+        const cloudData = await uploadSingleToCloudinary(textBlob, fileName, "text", null);
+
+        allItems.unshift({
+          id: cloudData.public_id,
+          name: fileName,
+          url: cloudData.secure_url,
+          category: "text",
+          resourceType: "raw",
+          format: "txt",
+          bytes: textBlob.size,
+          cachedText: content,
+          createdAt: Date.now(),
+          dateStr: new Date().toLocaleString()
+        });
+
+        document.getElementById('noteTitle').value = "";
+        document.getElementById('noteContent').value = "";
+        closeTextModal();
+        renderItems();
+      } catch (e) {
+        showError("Text cloud save failed: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save to Cloud";
+      }
+    };
+
+    // 4. TABS, GRID & MULTI-SELECT
+    window.switchTab = function(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.tab === tab) {
+          btn.classList.add('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
+          btn.classList.remove('text-emerald-50');
+        } else {
+          btn.classList.remove('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
+          btn.classList.add('text-emerald-50');
+        }
+      });
+      renderItems();
+    };
+
+    function getFilteredItems() {
+      if (currentTab === 'all') return allItems;
+      return allItems.filter(item => item.category === currentTab);
+    }
+
+    function renderItems() {
+      const grid = document.getElementById('mediaGrid');
+      const emptyState = document.getElementById('emptyState');
+      const emptyText = document.getElementById('emptyText');
+      const filtered = getFilteredItems();
+
+      grid.innerHTML = "";
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        emptyText.textContent = `No items in ${currentTab} category yet.`;
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      filtered.forEach(item => {
+        const isSelected = selectedIds.has(item.id);
+        const card = document.createElement('div');
+        card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
+
+        let mediaPreview = "";
+        if (item.category === "image") {
+          mediaPreview = `<img src="${item.url}" alt="${escapeHtml(item.name)}" loading="lazy" class="w-full h-36 object-cover bg-slate-100" />`;
+        } else if (item.category === "video") {
+          mediaPreview = `
+            <div class="w-full h-36 bg-slate-900 flex items-center justify-center relative">
+              <video src="${item.url}#t=0.5" preload="metadata" class="w-full h-full object-cover opacity-80"></video>
+              <div class="absolute w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow">
+                <i class="fa-solid fa-play ml-0.5"></i>
+              </div>
+            </div>`;
+        } else if (item.category === "audio") {
+          mediaPreview = `
+            <div class="w-full h-36 bg-gradient-to-br from-emerald-50 to-teal-100 flex flex-col items-center justify-center text-[#10b981]">
+              <i class="fa-solid fa-microphone-lines text-3xl mb-1"></i>
+              <span class="text-[11px] font-bold uppercase tracking-wider">Voice Cloud</span>
+            </div>`;
+        } else {
+          mediaPreview = `
+            <div class="w-full h-36 bg-amber-50/70 p-3 flex flex-col justify-between items-center text-center">
+              <div class="mt-4 w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-file-lines"></i>
+              </div>
+              <span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Cloud Text / Doc</span>
+            </div>`;
+        }
+
+        card.innerHTML = `
+          <div onclick="handleCardClick('${item.id}')" class="cursor-pointer">
+            ${mediaPreview}
+          </div>
+
+          ${isSelectMode ? `
+            <div onclick="toggleItemSelect('${item.id}')" class="absolute top-2.5 left-2.5 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer shadow ${isSelected ? 'bg-[#10b981] text-white' : 'bg-white/90 text-slate-400 border border-slate-300'}">
+              <i class="fa-solid fa-check text-xs"></i>
+            </div>
+          ` : ''}
+
+          <div class="p-2.5 flex items-center justify-between gap-1 bg-white">
+            <p onclick="handleCardClick('${item.id}')" class="text-xs font-bold text-slate-700 truncate flex-1 cursor-pointer">${escapeHtml(item.name)}</p>
+            <div class="flex items-center gap-1">
+              <button onclick="showInfo('${item.id}')" title="Info" class="w-7 h-7 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-circle-info"></i>
+              </button>
+              <button onclick="downloadItem('${item.id}')" title="Download" class="w-7 h-7 rounded-full hover:bg-emerald-50 text-[#10b981] flex items-center justify-center text-xs">
+                <i class="fa-solid fa-download"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Multi-Select & Remove from View
+    window.toggleSelectMode = function() {
+      isSelectMode = !isSelectMode;
+      selectedIds.clear();
+      updateSelectUI();
+      renderItems();
+    };
+
+    window.toggleItemSelect = function(id) {
+      if (selectedIds.has(id)) selectedIds.delete(id);
+      else selectedIds.add(id);
+      updateSelectUI();
+      renderItems();
+    };
+
+    window.selectAllVisible = function() {
+      getFilteredItems().forEach(item => selectedIds.add(item.id));
+      updateSelectUI();
+      renderItems();
+    };
+
+    window.clearSelection = function() {
+      isSelectMode = false;
+      selectedIds.clear();
+      updateSelectUI();
+      renderItems();
+    };
+
+    function updateSelectUI() {
+      const bar = document.getElementById('multiSelectBar');
+      const count = document.getElementById('selectedCount');
+      if (isSelectMode) {
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+        count.textContent = `${selectedIds.size} Selected`;
+      } else {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+      }
+    }
+
+    window.deleteSelected = function() {
+      if (selectedIds.size === 0) return;
+      if (!confirm(`Hide ${selectedIds.size} selected item(s) from dashboard? (Original stays safe in Cloudinary)`)) return;
+
+      selectedIds.forEach(id => hiddenIds.add(id));
+      localStorage.setItem("ronock_hidden_ids", JSON.stringify(Array.from(hiddenIds)));
+      allItems = allItems.filter(item => !selectedIds.has(item.id));
+
+      clearSelection();
+      renderItems();
+    };
+
+    // 5. FULLSCREEN PREVIEW, INFO & DOWNLOAD
+    window.handleCardClick = async function(id) {
+      if (isSelectMode) {
+        toggleItemSelect(id);
+        return;
+      }
+      const item = allItems.find(i => i.id === id);
+      if (!item) return;
+
+      const modal = document.getElementById('previewModal');
+      const body = document.getElementById('previewBody');
+      document.getElementById('previewTitle').textContent = item.name;
+      document.getElementById('previewInfoBtn').onclick = () => showInfo(id);
+      document.getElementById('previewDownloadBtn').onclick = () => downloadItem(id);
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      if (item.category === "image") {
+        body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
+      } else if (item.category === "video") {
+        body.innerHTML = `<video src="${item.url}" controls autoplay class="max-h-full max-w-full rounded-xl"></video>`;
+      } else if (item.category === "audio") {
+        body.innerHTML = `
+          <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
+            <i class="fa-solid fa-music text-5xl text-[#10b981] mb-4"></i>
+            <p class="font-bold mb-4">${escapeHtml(item.name)}</p>
+            <audio src="${item.url}" controls autoplay class="w-full"></audio>
+          </div>`;
+      } else {
+        body.innerHTML = `<div class="text-center text-slate-300"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><p class="text-xs">Loading cloud text...</p></div>`;
+        try {
+          const textContent = item.cachedText || await (await fetch(item.url)).text();
+          item.cachedText = textContent;
+          body.innerHTML = `
+            <div class="bg-white text-slate-800 p-6 rounded-3xl max-w-lg w-full max-h-[80vh] overflow-auto">
+              <h4 class="font-extrabold text-lg mb-3 border-b pb-2">${escapeHtml(item.name)}</h4>
+              <p class="text-sm whitespace-pre-wrap leading-relaxed">${escapeHtml(textContent)}</p>
+            </div>`;
+        } catch (e) {
+          body.innerHTML = `<div class="text-center"><p class="mb-3">Preview unavailable.</p><a href="${item.url}" target="_blank" class="bg-[#10b981] px-4 py-2 rounded-xl text-sm font-bold">Open File</a></div>`;
+        }
+      }
+    };
+
+    window.closePreview = function() {
+      const modal = document.getElementById('previewModal');
+      document.getElementById('previewBody').innerHTML = "";
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    window.showInfo = function(id) {
+      const item = allItems.find(i => i.id === id);
+      if (!item) return;
+
+      const sizeKB = item.bytes ? (item.bytes / 1024).toFixed(1) + " KB" : "Cloud Stored";
+      const dims = (item.width && item.height) ? `${item.width} × ${item.height} px` : "N/A";
+
+      document.getElementById('infoDetails').innerHTML = `
+        <div class="flex justify-between"><span class="text-slate-400">Name:</span><span class="font-bold text-right truncate max-w-[200px]">${escapeHtml(item.name)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Category:</span><span class="font-bold uppercase text-[#10b981]">${item.category}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Size:</span><span class="font-semibold">${sizeKB}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Dimensions:</span><span class="font-semibold">${dims}</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Storage:</span><span class="font-bold text-emerald-600">Permanent Cloud</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Uploaded:</span><span class="font-semibold">${item.dateStr || "Synced"}</span></div>
+      `;
+
+      document.getElementById('infoDownloadBtn').onclick = () => downloadItem(id);
+      document.getElementById('infoModal').classList.remove('hidden');
+      document.getElementById('infoModal').classList.add('flex');
+    };
+
+    window.closeInfoModal = function() {
+      document.getElementById('infoModal').classList.add('hidden');
+      document.getElementById('infoModal').classList.remove('flex');
+    };
+
+    window.downloadItem = async function(id) {
+      const item = allItems.find(i => i.id === id);
+      if (!item) return;
+
+      try {
+        const response = await fetch(item.url);
+        const blob = await response.blob();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = item.name || "ronock_cloud_file";
+        link.click();
+      } catch (e) {
+        window.open(item.url, "_blank");
+      }
+    };
+
+    window.handleLogout = function() {
+      if (confirm("Are you sure you want to lock/logout?")) {
+        location.reload();
+      }
+    };
+
+    function showError(msg) {
+      const el = document.getElementById('errorAlert');
+      document.getElementById('errorAlertText').textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    // Boot & Sync from Permanent Cloud
+    syncFromCloud();
+  </script>
 </body>
 </html>
