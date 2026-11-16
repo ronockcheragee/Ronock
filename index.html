@@ -1,729 +1,815 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>RONOCK - Permanent Cloud Vault</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: #f4f7f6;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .one-ui-card {
-      border-radius: 26px;
-      background: #ffffff;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    }
-    @keyframes pulse-border {
-      0%, 100% { border-color: #10b981; }
-      50% { border-color: #34d399; }
-    }
-    .uploading-badge {
-      animation: pulse-border 1.5s infinite;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>RONOCK - Permanent Cloud Vault</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+body {
+font-family: 'Plus Jakarta Sans', sans-serif;
+background-color: #f4f7f6;
+-webkit-tap-highlight-color: transparent;
+user-select: none;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.one-ui-card {
+border-radius: 26px;
+background: #ffffff;
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+@keyframes pulse-border {
+0%, 100% { border-color: #10b981; }
+50% { border-color: #34d399; }
+}
+.uploading-badge {
+animation: pulse-border 1.5s infinite;
+}
+</style>
 </head>
 <body class="text-slate-800 pb-24">
 
-  <!-- Top One UI Header -->
-  <header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px] transition-all">
-    <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
-      <!-- Top Bar -->
-      <div class="flex items-center justify-between gap-2 mb-3">
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl font-extrabold tracking-wide">RONOCK</h1>
-          <span class="bg-emerald-800/60 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Cloud</span>
-        </div>
-
-        <!-- Live Upload Progress Pill -->
-        <div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge">
-          <i class="fa-solid fa-hourglass-half fa-spin text-amber-300"></i>
-          <span id="uploadStatusText">Uploading [0/0]: 0%</span>
-        </div>
-
-        <button onclick="handleLogout()" class="bg-rose-500 hover:bg-rose-600 active:scale-95 transition text-white text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-          <span>Logout</span>
-          <i class="fa-solid fa-lock text-[11px]"></i>
-        </button>
-      </div>
-
-      <!-- Multi-Select Action Bar -->
-      <div id="multiSelectBar" class="hidden items-center justify-between bg-emerald-900/90 px-4 py-2 rounded-2xl mb-2 text-sm">
-        <div class="flex items-center gap-3">
-          <button onclick="clearSelection()" class="text-emerald-200 hover:text-white">
-            <i class="fa-solid fa-xmark text-lg"></i>
-          </button>
-          <span id="selectedCount" class="font-bold">0 Selected</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <button onclick="selectAllVisible()" class="text-xs bg-emerald-700 px-2.5 py-1 rounded-lg font-semibold">Select All</button>
-          <button onclick="deleteSelected()" class="bg-rose-500 hover:bg-rose-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
-            <i class="fa-solid fa-trash"></i> Remove
-          </button>
-        </div>
-      </div>
-
-      <!-- Category Tabs -->
-      <nav class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-        <button onclick="switchTab('all')" data-tab="all" class="tab-btn active bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap shadow-sm">
-          Dashboard
-        </button>
-        <button onclick="switchTab('image')" data-tab="image" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
-          Picture
-        </button>
-        <button onclick="switchTab('video')" data-tab="video" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
-          Video
-        </button>
-        <button onclick="switchTab('audio')" data-tab="audio" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
-          Voice
-        </button>
-        <button onclick="switchTab('text')" data-tab="text" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">
-          Text
-        </button>
-      </nav>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="max-w-3xl mx-auto px-4 pt-5">
-    <!-- Action Controls -->
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-      <div class="flex items-center gap-2">
-        <label for="fileInput" class="cursor-pointer bg-[#10b981] hover:bg-emerald-600 active:scale-95 transition text-white font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm flex items-center gap-2">
-          <i class="fa-solid fa-plus"></i>
-          <span>Import File</span>
-        </label>
-        <input type="file" id="fileInput" multiple accept="image/*,video/*,audio/*,.txt,.pdf,.doc,.docx" class="hidden" onchange="handleFileSelect(event)" />
-
-        <button onclick="openTextModal()" class="bg-white hover:bg-slate-50 active:scale-95 transition text-emerald-700 border border-emerald-200 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm flex items-center gap-2">
-          <i class="fa-solid fa-pen-to-square"></i>
-          <span>Add Note</span>
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button onclick="syncFromCloud()" title="Refresh from Cloud" class="text-xs font-bold text-[#10b981] bg-white border border-emerald-200 px-3 py-2 rounded-xl hover:bg-emerald-50 active:scale-95 transition">
-          <i class="fa-solid fa-rotate"></i>
-        </button>
-        <button id="toggleSelectModeBtn" onclick="toggleSelectMode()" class="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 active:scale-95 transition">
-          <i class="fa-regular fa-square-check mr-1"></i> Select
-        </button>
-      </div>
-    </div>
-
-    <!-- Error / Setup Helper Banner -->
-    <div id="errorAlert" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl mb-4 text-xs flex items-start justify-between gap-2">
-      <div class="flex items-start gap-2">
-        <i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500"></i>
-        <span id="errorAlertText"></span>
-      </div>
-      <button onclick="document.getElementById('errorAlert').classList.add('hidden')" class="text-rose-400 hover:text-rose-600">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    </div>
-
-    <!-- Loading Skeleton -->
-    <div id="loadingState" class="py-16 text-center text-slate-400">
-      <i class="fa-solid fa-cloud-arrow-down fa-bounce text-3xl text-[#10b981] mb-3"></i>
-      <p class="text-sm font-medium">Syncing permanent cloud vault...</p>
-    </div>
-
-    <!-- Empty State -->
-    <div id="emptyState" class="hidden py-20 text-center">
-      <div class="w-16 h-16 bg-slate-200/70 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400 text-2xl">
-        <i class="fa-regular fa-folder-open"></i>
-      </div>
-      <p id="emptyText" class="text-slate-500 font-medium text-sm">No items in all category yet.</p>
-    </div>
-
-    <!-- Media Grid -->
-    <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
-  </main>
-
-  <!-- Add Text Note Modal -->
-  <div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-    <div class="one-ui-card w-full max-w-md p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-extrabold text-slate-800">Save Permanent Text</h3>
-        <button onclick="closeTextModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <input type="text" id="noteTitle" placeholder="Title (e.g., Important Password / Note)" class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold mb-3 focus:outline-none focus:ring-2 focus:ring-[#10b981]" />
-      <textarea id="noteContent" rows="5" placeholder="Write your text here (saved to cloud forever)..." class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]"></textarea>
-      <div class="flex justify-end gap-2">
-        <button onclick="closeTextModal()" class="px-4 py-2.5 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
-        <button onclick="saveTextNote()" id="saveNoteBtn" class="bg-[#10b981] text-white px-5 py-2.5 rounded-2xl text-sm font-bold shadow-sm hover:bg-emerald-600">Save to Cloud</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Info Details Modal -->
-  <div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-    <div class="one-ui-card w-full max-w-md p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
-          <i class="fa-solid fa-circle-info text-[#10b981]"></i> Cloud File Info
-        </h3>
-        <button onclick="closeInfoModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div id="infoDetails" class="space-y-2.5 text-sm bg-slate-50 p-4 rounded-2xl border border-slate-100"></div>
-      <div class="mt-5 flex justify-end gap-2">
-        <button id="infoDownloadBtn" class="bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-1.5">
-          <i class="fa-solid fa-download"></i> Download
-        </button>
-        <button onclick="closeInfoModal()" class="bg-slate-800 text-white px-5 py-2.5 rounded-2xl text-sm font-bold">Done</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Fullscreen Preview Modal -->
-  <div id="previewModal" class="fixed inset-0 z-50 hidden flex-col bg-black/95 text-white">
-    <div class="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
-      <button onclick="closePreview()" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-        <i class="fa-solid fa-arrow-left"></i>
-      </button>
-      <span id="previewTitle" class="text-sm font-semibold truncate max-w-[60%]">Preview</span>
-      <div class="flex items-center gap-2">
-        <button id="previewInfoBtn" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-          <i class="fa-solid fa-info"></i>
-        </button>
-        <button id="previewDownloadBtn" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-          <i class="fa-solid fa-download"></i>
-        </button>
-      </div>
-    </div>
-    <div id="previewBody" class="flex-1 flex items-center justify-center p-4 overflow-auto"></div>
-  </div>
-
-  <!-- Permanent Cloud Sync Engine -->
-  <script>
-    const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
-    const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
-    const VAULT_TAG = "ronock_vault"; // Permanent tag for all your files
-
-    let allItems = [];
-    let hiddenIds = new Set(JSON.parse(localStorage.getItem("ronock_hidden_ids") || "[]"));
-    let currentTab = 'all';
-    let isSelectMode = false;
-    let selectedIds = new Set();
-    let isUploading = false;
-
-    // 1. FETCH ALL FILES DIRECTLY FROM CLOUDINARY CLOUD (WORKS ON ANY DEVICE FOREVER)
-    window.syncFromCloud = async function() {
-      const loadingEl = document.getElementById('loadingState');
-      loadingEl.classList.remove('hidden');
-
-      const types = ['image', 'video', 'raw'];
-      let fetchedItems = [];
-      let resourceListBlocked = false;
-
-      for (const rType of types) {
-        try {
-          // Cache-buster timestamp ensures fresh list every time
-          const listUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/list/${VAULT_TAG}.json?t=${Date.now()}`;
-          const res = await fetch(listUrl);
-
-          if (res.status === 401 || res.status === 403) {
-            resourceListBlocked = true;
-            continue;
-          }
-          if (!res.ok) continue;
-
-          const data = await res.json();
-          if (data && Array.isArray(data.resources)) {
-            data.resources.forEach(item => {
-              if (hiddenIds.has(item.public_id)) return;
-
-              const ext = item.format ? `.${item.format}` : '';
-              const cleanName = (item.context && item.context.custom && item.context.custom.caption)
-                ? item.context.custom.caption
-                : (item.public_id.split('/').pop() + ext);
-
-              const fileUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/upload/v${item.version}/${item.public_id}${ext}`;
-              const category = classifyResource(rType, item.format, item.context);
-
-              fetchedItems.push({
-                id: item.public_id,
-                name: cleanName,
-                url: fileUrl,
-                category: category,
-                resourceType: rType,
-                format: item.format || 'file',
-                width: item.width || null,
-                height: item.height || null,
-                bytes: item.bytes || 0,
-                createdAt: new Date(item.created_at).getTime(),
-                dateStr: new Date(item.created_at).toLocaleString()
-              });
-            });
-          }
-        } catch (err) {
-          console.warn(`List fetch warning for ${rType}:`, err);
-        }
-      }
-
-      if (resourceListBlocked && fetchedItems.length === 0) {
-        showError("Cloudinary 'Resource list' is currently locked! Go to Cloudinary Settings > Security > Restricted image types > UNCHECK 'Resource list' & Save so your files load across all devices.");
-      }
-
-      // Sort newest first
-      fetchedItems.sort((a, b) => b.createdAt - a.createdAt);
-      allItems = fetchedItems;
-
-      loadingEl.classList.add('hidden');
-      renderItems();
-    };
-
-    function classifyResource(rType, format, context) {
-      if (context && context.custom && context.custom.vault_cat) {
-        return context.custom.vault_cat;
-      }
-      const fmt = (format || "").toLowerCase();
-      if (rType === 'image') return 'image';
-      if (rType === 'video') {
-        if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt)) return 'audio';
-        return 'video';
-      }
-      return 'text';
-    }
-
-    // 2. SEQUENTIAL ONE-BY-ONE UPLOAD TO PERMANENT CLOUD
-    window.handleFileSelect = async function(event) {
-      const files = Array.from(event.target.files);
-      if (!files.length) return;
-      if (isUploading) {
-        alert("Upload already in progress. Please wait.");
-        return;
-      }
-
-      isUploading = true;
-      const statusPill = document.getElementById('uploadStatusPill');
-      const statusText = document.getElementById('uploadStatusText');
-      statusPill.classList.remove('hidden');
-      statusPill.classList.add('flex');
-
-      const total = files.length;
-
-      for (let i = 0; i < total; i++) {
-        const file = files[i];
-        const currentNum = i + 1;
-        statusText.textContent = `Uploading [${currentNum}/${total}]: 0%`;
-
-        try {
-          const cat = detectFileCategory(file.type, file.name);
-          const cloudData = await uploadSingleToCloudinary(file, file.name, cat, (percent) => {
-            if (percent < 100) {
-              statusText.textContent = `Uploading [${currentNum}/${total}]: ${percent}%`;
-            } else {
-              statusText.textContent = `Saving [${currentNum}/${total}]: 100%`;
-            }
-          });
-
-          const newItem = {
-            id: cloudData.public_id,
-            name: file.name,
-            url: cloudData.secure_url,
-            category: cat,
-            resourceType: cloudData.resource_type,
-            format: cloudData.format || '',
-            width: cloudData.width || null,
-            height: cloudData.height || null,
-            bytes: cloudData.bytes || file.size,
-            createdAt: Date.now(),
-            dateStr: new Date().toLocaleString()
-          };
-
-          allItems.unshift(newItem);
-          renderItems();
-
-        } catch (err) {
-          console.error(`Failed ${file.name}:`, err);
-          showError(`"${file.name}" failed: ${err.message}`);
-        }
-      }
-
-      isUploading = false;
-      event.target.value = "";
-      setTimeout(() => {
-        statusPill.classList.add('hidden');
-        statusPill.classList.remove('flex');
-      }, 1200);
-    };
-
-    function uploadSingleToCloudinary(fileBlob, originalName, category, onProgress) {
-      return new Promise((resolve, reject) => {
-        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
-        const xhr = new XMLHttpRequest();
-        const formData = new FormData();
-
-        formData.append("file", fileBlob, originalName);
-        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-        formData.append("tags", VAULT_TAG);
-        formData.append("context", `caption=${originalName}|vault_cat=${category}`);
-
-        xhr.timeout = 90000; // 90s timeout for large videos
-
-        xhr.upload.addEventListener("progress", (e) => {
-          if (e.lengthComputable && onProgress) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            onProgress(percent);
-          }
-        });
-
-        xhr.onreadystatechange = function() {
-          if (xhr.readyState === 4) {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              try {
-                resolve(JSON.parse(xhr.responseText));
-              } catch (e) {
-                reject(new Error("Invalid response from server"));
-              }
-            } else {
-              let errMsg = `HTTP ${xhr.status}`;
-              try {
-                const errJson = JSON.parse(xhr.responseText);
-                if (errJson.error && errJson.error.message) errMsg = errJson.error.message;
-              } catch (_) {}
-              reject(new Error(errMsg));
-            }
-          }
-        };
-
-        xhr.ontimeout = () => reject(new Error("Network timeout"));
-        xhr.onerror = () => reject(new Error("Connection error"));
-
-        xhr.open("POST", url, true);
-        xhr.send(formData);
-      });
-    }
-
-    function detectFileCategory(mimeType, fileName) {
-      const m = (mimeType || "").toLowerCase();
-      const n = (fileName || "").toLowerCase();
-      if (m.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic)$/.test(n)) return "image";
-      if (m.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(n)) return "audio";
-      if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/.test(n)) return "video";
-      return "text";
-    }
-
-    // 3. SAVE TEXT NOTE AS PERMANENT CLOUD FILE
-    window.openTextModal = () => {
-      document.getElementById('textModal').classList.remove('hidden');
-      document.getElementById('textModal').classList.add('flex');
-    };
-    window.closeTextModal = () => {
-      document.getElementById('textModal').classList.add('hidden');
-      document.getElementById('textModal').classList.remove('flex');
-    };
-    window.saveTextNote = async () => {
-      const title = document.getElementById('noteTitle').value.trim() || "Note_" + Date.now();
-      const content = document.getElementById('noteContent').value.trim();
-      if (!content) return alert("Please write some text first.");
-
-      const btn = document.getElementById('saveNoteBtn');
-      btn.disabled = true;
-      btn.textContent = "Saving to Cloud...";
-
-      try {
-        const fileName = title.endsWith(".txt") ? title : `${title}.txt`;
-        const textBlob = new Blob([content], { type: "text/plain" });
-        const cloudData = await uploadSingleToCloudinary(textBlob, fileName, "text", null);
-
-        allItems.unshift({
-          id: cloudData.public_id,
-          name: fileName,
-          url: cloudData.secure_url,
-          category: "text",
-          resourceType: "raw",
-          format: "txt",
-          bytes: textBlob.size,
-          cachedText: content,
-          createdAt: Date.now(),
-          dateStr: new Date().toLocaleString()
-        });
-
-        document.getElementById('noteTitle').value = "";
-        document.getElementById('noteContent').value = "";
-        closeTextModal();
-        renderItems();
-      } catch (e) {
-        showError("Text cloud save failed: " + e.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Save to Cloud";
-      }
-    };
-
-    // 4. TABS, GRID & MULTI-SELECT
-    window.switchTab = function(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.dataset.tab === tab) {
-          btn.classList.add('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
-          btn.classList.remove('text-emerald-50');
-        } else {
-          btn.classList.remove('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
-          btn.classList.add('text-emerald-50');
-        }
-      });
-      renderItems();
-    };
-
-    function getFilteredItems() {
-      if (currentTab === 'all') return allItems;
-      return allItems.filter(item => item.category === currentTab);
-    }
-
-    function renderItems() {
-      const grid = document.getElementById('mediaGrid');
-      const emptyState = document.getElementById('emptyState');
-      const emptyText = document.getElementById('emptyText');
-      const filtered = getFilteredItems();
-
-      grid.innerHTML = "";
-
-      if (filtered.length === 0) {
-        emptyState.classList.remove('hidden');
-        emptyText.textContent = `No items in ${currentTab} category yet.`;
-        return;
-      }
-      emptyState.classList.add('hidden');
-
-      filtered.forEach(item => {
-        const isSelected = selectedIds.has(item.id);
-        const card = document.createElement('div');
-        card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
-
-        let mediaPreview = "";
-        if (item.category === "image") {
-          mediaPreview = `<img src="${item.url}" alt="${escapeHtml(item.name)}" loading="lazy" class="w-full h-36 object-cover bg-slate-100" />`;
-        } else if (item.category === "video") {
-          mediaPreview = `
-            <div class="w-full h-36 bg-slate-900 flex items-center justify-center relative">
-              <video src="${item.url}#t=0.5" preload="metadata" class="w-full h-full object-cover opacity-80"></video>
-              <div class="absolute w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow">
-                <i class="fa-solid fa-play ml-0.5"></i>
-              </div>
-            </div>`;
-        } else if (item.category === "audio") {
-          mediaPreview = `
-            <div class="w-full h-36 bg-gradient-to-br from-emerald-50 to-teal-100 flex flex-col items-center justify-center text-[#10b981]">
-              <i class="fa-solid fa-microphone-lines text-3xl mb-1"></i>
-              <span class="text-[11px] font-bold uppercase tracking-wider">Voice Cloud</span>
-            </div>`;
-        } else {
-          mediaPreview = `
-            <div class="w-full h-36 bg-amber-50/70 p-3 flex flex-col justify-between items-center text-center">
-              <div class="mt-4 w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
-                <i class="fa-solid fa-file-lines"></i>
-              </div>
-              <span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Cloud Text / Doc</span>
-            </div>`;
-        }
-
-        card.innerHTML = `
-          <div onclick="handleCardClick('${item.id}')" class="cursor-pointer">
-            ${mediaPreview}
-          </div>
-
-          ${isSelectMode ? `
-            <div onclick="toggleItemSelect('${item.id}')" class="absolute top-2.5 left-2.5 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer shadow ${isSelected ? 'bg-[#10b981] text-white' : 'bg-white/90 text-slate-400 border border-slate-300'}">
-              <i class="fa-solid fa-check text-xs"></i>
-            </div>
-          ` : ''}
-
-          <div class="p-2.5 flex items-center justify-between gap-1 bg-white">
-            <p onclick="handleCardClick('${item.id}')" class="text-xs font-bold text-slate-700 truncate flex-1 cursor-pointer">${escapeHtml(item.name)}</p>
-            <div class="flex items-center gap-1">
-              <button onclick="showInfo('${item.id}')" title="Info" class="w-7 h-7 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center text-xs">
-                <i class="fa-solid fa-circle-info"></i>
-              </button>
-              <button onclick="downloadItem('${item.id}')" title="Download" class="w-7 h-7 rounded-full hover:bg-emerald-50 text-[#10b981] flex items-center justify-center text-xs">
-                <i class="fa-solid fa-download"></i>
-              </button>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    // Multi-Select & Remove from View
-    window.toggleSelectMode = function() {
-      isSelectMode = !isSelectMode;
-      selectedIds.clear();
-      updateSelectUI();
-      renderItems();
-    };
-
-    window.toggleItemSelect = function(id) {
-      if (selectedIds.has(id)) selectedIds.delete(id);
-      else selectedIds.add(id);
-      updateSelectUI();
-      renderItems();
-    };
-
-    window.selectAllVisible = function() {
-      getFilteredItems().forEach(item => selectedIds.add(item.id));
-      updateSelectUI();
-      renderItems();
-    };
-
-    window.clearSelection = function() {
-      isSelectMode = false;
-      selectedIds.clear();
-      updateSelectUI();
-      renderItems();
-    };
-
-    function updateSelectUI() {
-      const bar = document.getElementById('multiSelectBar');
-      const count = document.getElementById('selectedCount');
-      if (isSelectMode) {
-        bar.classList.remove('hidden');
-        bar.classList.add('flex');
-        count.textContent = `${selectedIds.size} Selected`;
-      } else {
-        bar.classList.add('hidden');
-        bar.classList.remove('flex');
-      }
-    }
-
-    window.deleteSelected = function() {
-      if (selectedIds.size === 0) return;
-      if (!confirm(`Hide ${selectedIds.size} selected item(s) from dashboard? (Original stays safe in Cloudinary)`)) return;
-
-      selectedIds.forEach(id => hiddenIds.add(id));
-      localStorage.setItem("ronock_hidden_ids", JSON.stringify(Array.from(hiddenIds)));
-      allItems = allItems.filter(item => !selectedIds.has(item.id));
-
-      clearSelection();
-      renderItems();
-    };
-
-    // 5. FULLSCREEN PREVIEW, INFO & DOWNLOAD
-    window.handleCardClick = async function(id) {
-      if (isSelectMode) {
-        toggleItemSelect(id);
-        return;
-      }
-      const item = allItems.find(i => i.id === id);
-      if (!item) return;
-
-      const modal = document.getElementById('previewModal');
-      const body = document.getElementById('previewBody');
-      document.getElementById('previewTitle').textContent = item.name;
-      document.getElementById('previewInfoBtn').onclick = () => showInfo(id);
-      document.getElementById('previewDownloadBtn').onclick = () => downloadItem(id);
-
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-
-      if (item.category === "image") {
-        body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
-      } else if (item.category === "video") {
-        body.innerHTML = `<video src="${item.url}" controls autoplay class="max-h-full max-w-full rounded-xl"></video>`;
-      } else if (item.category === "audio") {
-        body.innerHTML = `
-          <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
-            <i class="fa-solid fa-music text-5xl text-[#10b981] mb-4"></i>
-            <p class="font-bold mb-4">${escapeHtml(item.name)}</p>
-            <audio src="${item.url}" controls autoplay class="w-full"></audio>
-          </div>`;
-      } else {
-        body.innerHTML = `<div class="text-center text-slate-300"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><p class="text-xs">Loading cloud text...</p></div>`;
-        try {
-          const textContent = item.cachedText || await (await fetch(item.url)).text();
-          item.cachedText = textContent;
-          body.innerHTML = `
-            <div class="bg-white text-slate-800 p-6 rounded-3xl max-w-lg w-full max-h-[80vh] overflow-auto">
-              <h4 class="font-extrabold text-lg mb-3 border-b pb-2">${escapeHtml(item.name)}</h4>
-              <p class="text-sm whitespace-pre-wrap leading-relaxed">${escapeHtml(textContent)}</p>
-            </div>`;
-        } catch (e) {
-          body.innerHTML = `<div class="text-center"><p class="mb-3">Preview unavailable.</p><a href="${item.url}" target="_blank" class="bg-[#10b981] px-4 py-2 rounded-xl text-sm font-bold">Open File</a></div>`;
-        }
-      }
-    };
-
-    window.closePreview = function() {
-      const modal = document.getElementById('previewModal');
-      document.getElementById('previewBody').innerHTML = "";
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    };
-
-    window.showInfo = function(id) {
-      const item = allItems.find(i => i.id === id);
-      if (!item) return;
-
-      const sizeKB = item.bytes ? (item.bytes / 1024).toFixed(1) + " KB" : "Cloud Stored";
-      const dims = (item.width && item.height) ? `${item.width} × ${item.height} px` : "N/A";
-
-      document.getElementById('infoDetails').innerHTML = `
-        <div class="flex justify-between"><span class="text-slate-400">Name:</span><span class="font-bold text-right truncate max-w-[200px]">${escapeHtml(item.name)}</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Category:</span><span class="font-bold uppercase text-[#10b981]">${item.category}</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Size:</span><span class="font-semibold">${sizeKB}</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Dimensions:</span><span class="font-semibold">${dims}</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Storage:</span><span class="font-bold text-emerald-600">Permanent Cloud</span></div>
-        <div class="flex justify-between"><span class="text-slate-400">Uploaded:</span><span class="font-semibold">${item.dateStr || "Synced"}</span></div>
-      `;
-
-      document.getElementById('infoDownloadBtn').onclick = () => downloadItem(id);
-      document.getElementById('infoModal').classList.remove('hidden');
-      document.getElementById('infoModal').classList.add('flex');
-    };
-
-    window.closeInfoModal = function() {
-      document.getElementById('infoModal').classList.add('hidden');
-      document.getElementById('infoModal').classList.remove('flex');
-    };
-
-    window.downloadItem = async function(id) {
-      const item = allItems.find(i => i.id === id);
-      if (!item) return;
-
-      try {
-        const response = await fetch(item.url);
-        const blob = await response.blob();
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = item.name || "ronock_cloud_file";
-        link.click();
-      } catch (e) {
-        window.open(item.url, "_blank");
-      }
-    };
-
-    window.handleLogout = function() {
-      if (confirm("Are you sure you want to lock/logout?")) {
-        location.reload();
-      }
-    };
-
-    function showError(msg) {
-      const el = document.getElementById('errorAlert');
-      document.getElementById('errorAlertText').textContent = msg;
-      el.classList.remove('hidden');
-    }
-
-    function escapeHtml(str) {
-      if (!str) return "";
-      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-    }
-
-    // Boot & Sync from Permanent Cloud
-    syncFromCloud();
-  </script>
+<!-- Strict Login Screen -->
+<div id="login-screen" class="fixed inset-0 z-50 bg-[#16a085] flex items-center justify-center p-4">
+<div class="bg-white p-7 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+<h2 class="text-2xl font-extrabold text-[#1abc9c] mb-1">RONOCK CHERAGEE</h2>
+<p class="text-xs text-slate-400 mb-6 font-semibold uppercase tracking-wider">School Memories Vault</p>
+<div id="login-error" class="hidden bg-rose-50 text-rose-600 text-xs font-bold p-2.5 rounded-xl mb-4">Incorrect Username or Password!</div>
+<input type="text" id="username-input" placeholder="Username" autocomplete="off" autocapitalize="off" class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold mb-3 focus:outline-none focus:ring-2 focus:ring-[#1abc9c]" />
+<input type="password" id="password-input" placeholder="Password" autocomplete="off" class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold mb-5 focus:outline-none focus:ring-2 focus:ring-[#1abc9c]" />
+<button onclick="handleLogin()" class="w-full bg-[#1abc9c] hover:bg-[#16a085] active:scale-95 transition text-white font-bold py-3.5 rounded-2xl shadow-md text-sm">Unlock Vault</button>
+</div>
+</div>
+
+<!-- Main App Content (Hidden until login) -->
+<div id="app-content" class="hidden">
+<header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px] transition-all">
+<div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<h1 class="text-xl font-extrabold tracking-wide">RONOCK</h1>
+<span id="sync-status" class="bg-emerald-800/60 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Cloud Sync Active ☁️</span>
+</div>
+
+<div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 backdrop-blur-sm px-3.5 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge">
+<i class="fa-solid fa-hourglass-half fa-spin text-amber-300"></i>
+<span id="uploadStatusText">Uploading [0/0]: 0%</span>
+</div>
+
+<button onclick="handleLogout()" class="bg-rose-500 hover:bg-rose-600 active:scale-95 transition text-white text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+<span>Logout</span>
+<i class="fa-solid fa-lock text-[11px]"></i>
+</button>
+</div>
+
+<div id="multiSelectBar" class="hidden items-center justify-between bg-emerald-900/90 px-4 py-2 rounded-2xl mb-2 text-sm">
+<div class="flex items-center gap-3">
+<button onclick="clearSelection()" class="text-emerald-200 hover:text-white">
+<i class="fa-solid fa-xmark text-lg"></i>
+</button>
+<span id="selectedCount" class="font-bold">0 Selected</span>
+</div>
+<div class="flex items-center gap-3">
+<button onclick="selectAllVisible()" class="text-xs bg-emerald-700 px-2.5 py-1 rounded-lg font-semibold">Select All</button>
+<button onclick="deleteSelected()" class="bg-rose-500 hover:bg-rose-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+<i class="fa-solid fa-trash"></i> Remove
+</button>
+</div>
+</div>
+
+<nav class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+<button onclick="switchTab('all')" data-tab="all" class="tab-btn active bg-amber-500 text-white font-bold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap shadow-sm">Dashboard</button>
+<button onclick="switchTab('image')" data-tab="image" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">Picture</button>
+<button onclick="switchTab('video')" data-tab="video" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">Video</button>
+<button onclick="switchTab('audio')" data-tab="audio" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">Voice</button>
+<button onclick="switchTab('text')" data-tab="text" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">Text</button>
+<button onclick="switchTab('secret')" data-tab="secret" class="tab-btn text-emerald-50 hover:bg-emerald-600/50 font-semibold text-sm px-4 py-2 rounded-2xl transition whitespace-nowrap">🔑 Secret</button>
+</nav>
+</div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 pt-5">
+<div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+<div class="flex items-center gap-2">
+<label for="fileInput" class="cursor-pointer bg-[#10b981] hover:bg-emerald-600 active:scale-95 transition text-white font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm flex items-center gap-2">
+<i class="fa-solid fa-plus"></i>
+<span>Import File</span>
+</label>
+<input type="file" id="fileInput" multiple accept="image/*,video/*,audio/*,.txt,.pdf,.doc,.docx" class="hidden" onchange="handleFileSelect(event)" />
+
+<button onclick="openTextModal()" class="bg-white hover:bg-slate-50 active:scale-95 transition text-emerald-700 border border-emerald-200 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm flex items-center gap-2">
+<i class="fa-solid fa-pen-to-square"></i>
+<span>Add Note</span>
+</button>
+</div>
+
+<div class="flex items-center gap-2">
+<button onclick="syncFromCloud()" title="Refresh from Cloud" class="text-xs font-bold text-[#10b981] bg-white border border-emerald-200 px-3 py-2 rounded-xl hover:bg-emerald-50 active:scale-95 transition">
+<i class="fa-solid fa-rotate"></i>
+</button>
+<button id="toggleSelectModeBtn" onclick="toggleSelectMode()" class="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 active:scale-95 transition">
+<i class="fa-regular fa-square-check mr-1"></i> Select
+</button>
+</div>
+</div>
+
+<div id="errorAlert" class="hidden bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl mb-4 text-xs flex items-start justify-between gap-2">
+<div class="flex items-start gap-2">
+<i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500"></i>
+<span id="errorAlertText"></span>
+</div>
+<button onclick="document.getElementById('errorAlert').classList.add('hidden')" class="text-rose-400 hover:text-rose-600">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+
+<div id="loadingState" class="py-16 text-center text-slate-400">
+<i class="fa-solid fa-cloud-arrow-down fa-bounce text-3xl text-[#10b981] mb-3"></i>
+<p class="text-sm font-medium">Syncing permanent cloud vault...</p>
+</div>
+
+<div id="emptyState" class="hidden py-20 text-center">
+<div class="w-16 h-16 bg-slate-200/70 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400 text-2xl">
+<i class="fa-regular fa-folder-open"></i>
+</div>
+<p id="emptyText" class="text-slate-500 font-medium text-sm">No items in category yet.</p>
+</div>
+
+<div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
+</main>
+</div>
+
+<!-- Secret PIN Modal -->
+<div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+<div class="bg-white p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
+<h3 class="text-lg font-extrabold text-slate-800 mb-1">Enter Secret PIN 🔑</h3>
+<p class="text-xs text-slate-400 mb-4">Enter 4-digit PIN to access protected files</p>
+<input type="password" id="secretPinInput" maxlength="4" placeholder="••••" class="w-full bg-slate-100 text-center tracking-[1em] text-xl font-bold rounded-2xl py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]" />
+<div class="flex gap-2">
+<button onclick="closePinModal()" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-2xl text-sm font-bold">Cancel</button>
+<button onclick="verifyPin()" class="flex-1 bg-[#10b981] text-white py-3 rounded-2xl text-sm font-bold">Unlock</button>
+</div>
+</div>
+</div>
+
+<!-- Add Text Note Modal -->
+<div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+<div class="one-ui-card w-full max-w-md p-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-extrabold text-slate-800">Save Permanent Text</h3>
+<button onclick="closeTextModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+<input type="text" id="noteTitle" placeholder="Title (e.g., Important Note)" class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold mb-3 focus:outline-none focus:ring-2 focus:ring-[#10b981]" />
+<textarea id="noteContent" rows="5" placeholder="Write your text here..." class="w-full bg-slate-100 rounded-2xl px-4 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#10b981]"></textarea>
+<div class="flex justify-end gap-2">
+<button onclick="closeTextModal()" class="px-4 py-2.5 rounded-2xl text-sm font-bold text-slate-500 hover:bg-slate-100">Cancel</button>
+<button onclick="saveTextNote()" id="saveNoteBtn" class="bg-[#10b981] text-white px-5 py-2.5 rounded-2xl text-sm font-bold shadow-sm hover:bg-emerald-600">Save to Cloud</button>
+</div>
+</div>
+</div>
+
+<!-- Info Details Modal -->
+<div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+<div class="one-ui-card w-full max-w-md p-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+<i class="fa-solid fa-circle-info text-[#10b981]"></i> Cloud File Info
+</h3>
+<button onclick="closeInfoModal()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+<div id="infoDetails" class="space-y-2.5 text-sm bg-slate-50 p-4 rounded-2xl border border-slate-100"></div>
+<div class="mt-5 flex justify-end gap-2">
+<button id="infoDownloadBtn" class="bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-1.5">
+<i class="fa-solid fa-download"></i> Download
+</button>
+<button onclick="closeInfoModal()" class="bg-slate-800 text-white px-5 py-2.5 rounded-2xl text-sm font-bold">Done</button>
+</div>
+</div>
+</div>
+
+<!-- Fullscreen Preview Modal -->
+<div id="previewModal" class="fixed inset-0 z-50 hidden flex-col bg-black/95 text-white">
+<div class="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
+<button onclick="closePreview()" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+<i class="fa-solid fa-arrow-left"></i>
+</button>
+<span id="previewTitle" class="text-sm font-semibold truncate max-w-[60%]">Preview</span>
+<div class="flex items-center gap-2">
+<button id="previewInfoBtn" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+<i class="fa-solid fa-info"></i>
+</button>
+<button id="previewDownloadBtn" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+<i class="fa-solid fa-download"></i>
+</button>
+</div>
+</div>
+<div id="previewBody" class="flex-1 flex items-center justify-center p-4 overflow-auto"></div>
+</div>
+
+<script>
+const DEFAULT_USERNAME = "RONOCK";
+const DEFAULT_PASSWORD = "@Ronock.268841";
+const DEFAULT_SECRET_PIN = "2688";
+
+const CLOUDINARY_CLOUD_NAME = "dwgri2ra2";
+const CLOUDINARY_UPLOAD_PRESET = "RONOCK";
+const VAULT_TAG = "ronock_vault";
+
+let allItems = [];
+let hiddenIds = new Set(JSON.parse(localStorage.getItem("ronock_hidden_ids") || "[]"));
+let secretIds = new Set(JSON.parse(localStorage.getItem("ronock_secret_ids") || "[]"));
+let currentTab = 'all';
+let isSelectMode = false;
+let selectedIds = new Set();
+let isUploading = false;
+let pendingTab = null;
+
+// Login Logic
+window.handleLogin = function() {
+const u = document.getElementById('username-input').value.trim();
+const p = document.getElementById('password-input').value.trim();
+
+if (u === DEFAULT_USERNAME && p === DEFAULT_PASSWORD) {
+sessionStorage.setItem('ronock_active_session', 'true');
+document.getElementById('login-screen').classList.add('hidden');
+document.getElementById('app-content').classList.remove('hidden');
+syncFromCloud();
+} else {
+document.getElementById('login-error').classList.remove('hidden');
+}
+};
+
+window.handleLogout = function() {
+sessionStorage.removeItem('ronock_active_session');
+sessionStorage.removeItem('secret_unlocked');
+location.reload();
+};
+
+if (sessionStorage.getItem('ronock_active_session') === 'true') {
+document.getElementById('login-screen').classList.add('hidden');
+document.getElementById('app-content').classList.remove('hidden');
+window.addEventListener('DOMContentLoaded', () => syncFromCloud());
+}
+
+// Cloud Sync Engine
+window.syncFromCloud = async function() {
+const loadingEl = document.getElementById('loadingState');
+if(loadingEl) loadingEl.classList.remove('hidden');
+
+const types = ['image', 'video', 'raw'];
+let fetchedItems = [];
+let resourceListBlocked = false;
+
+for (const rType of types) {
+try {
+const listUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/list/${VAULT_TAG}.json?t=${Date.now()}`;
+const res = await fetch(listUrl);
+
+if (res.status === 401 || res.status === 403) {
+resourceListBlocked = true;
+continue;
+}
+if (!res.ok) continue;
+
+const data = await res.json();
+if (data && Array.isArray(data.resources)) {
+data.resources.forEach(item => {
+if (hiddenIds.has(item.public_id)) return;
+
+const ext = item.format ? `.${item.format}` : '';
+const cleanName = (item.context && item.context.custom && item.context.custom.caption)
+? item.context.custom.caption
+: (item.public_id.split('/').pop() + ext);
+
+const fileUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/upload/v${item.version}/${item.public_id}${ext}`;
+const category = classifyResource(rType, item.format, item.context);
+
+fetchedItems.push({
+id: item.public_id,
+name: cleanName,
+url: fileUrl,
+category: category,
+resourceType: rType,
+format: item.format || 'file',
+width: item.width || null,
+height: item.height || null,
+bytes: item.bytes || 0,
+createdAt: new Date(item.created_at).getTime(),
+dateStr: new Date(item.created_at).toLocaleString()
+});
+});
+}
+} catch (err) {
+console.warn(`List fetch warning for ${rType}:`, err);
+}
+}
+
+if (resourceListBlocked && fetchedItems.length === 0) {
+showError("Cloudinary 'Resource list' is locked! Go to Cloudinary Settings > Security > Restricted image types > UNCHECK 'Resource list' & Save.");
+}
+
+fetchedItems.sort((a, b) => b.createdAt - a.createdAt);
+allItems = fetchedItems;
+
+if(loadingEl) loadingEl.classList.add('hidden');
+renderItems();
+};
+
+function classifyResource(rType, format, context) {
+if (context && context.custom && context.custom.vault_cat) {
+return context.custom.vault_cat;
+}
+const fmt = (format || "").toLowerCase();
+if (rType === 'image') return 'image';
+if (rType === 'video') {
+if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt)) return 'audio';
+return 'video';
+}
+return 'text';
+}
+
+// Upload Engine with Smart Overwrite & Summary Notification
+window.handleFileSelect = async function(event) {
+const files = Array.from(event.target.files);
+if (!files.length) return;
+if (isUploading) {
+alert("Upload already in progress. Please wait.");
+return;
+}
+
+isUploading = true;
+const statusPill = document.getElementById('uploadStatusPill');
+const statusText = document.getElementById('uploadStatusText');
+statusPill.classList.remove('hidden');
+statusPill.classList.add('flex');
+
+const total = files.length;
+let successCount = 0;
+let overwriteCount = 0;
+let failCount = 0;
+
+for (let i = 0; i < total; i++) {
+const file = files[i];
+const currentNum = i + 1;
+statusText.textContent = `Uploading [${currentNum}/${total}]: 0%`;
+
+try {
+const cat = detectFileCategory(file.type, file.name);
+
+// Check if same filename already exists in vault to overwrite
+const existingIndex = allItems.findIndex(item => item.name.toLowerCase() === file.name.toLowerCase());
+const isOverwriting = existingIndex !== -1;
+
+const cloudData = await uploadSingleToCloudinary(file, file.name, cat, (percent) => {
+if (percent < 100) {
+statusText.textContent = `Uploading [${currentNum}/${total}]: ${percent}%`;
+} else {
+statusText.textContent = `Saving [${currentNum}/${total}]: 100%`;
+}
+});
+
+const newItem = {
+id: cloudData.public_id,
+name: file.name,
+url: cloudData.secure_url,
+category: cat,
+resourceType: cloudData.resource_type,
+format: cloudData.format || '',
+width: cloudData.width || null,
+height: cloudData.height || null,
+bytes: cloudData.bytes || file.size,
+createdAt: Date.now(),
+dateStr: new Date().toLocaleString()
+};
+
+if (currentTab === 'secret') secretIds.add(newItem.id);
+
+if (isOverwriting) {
+// Replace old entry with updated one to avoid duplicates
+allItems[existingIndex] = newItem;
+overwriteCount++;
+} else {
+allItems.unshift(newItem);
+successCount++;
+}
+
+renderItems();
+
+} catch (err) {
+console.error(`Failed ${file.name}:`, err);
+failCount++;
+}
+}
+
+isUploading = false;
+event.target.value = "";
+setTimeout(() => {
+statusPill.classList.add('hidden');
+statusPill.classList.remove('flex');
+}, 1200);
+
+// Detailed Import Summary Notification
+alert(`📥 Import Summary:\n` +
+      `---------------------------\n` +
+      `📂 Total Selected: ${total}\n` +
+      `✅ Successfully Uploaded: ${successCount}\n` +
+      `🔄 Overwritten (Replaced): ${overwriteCount}\n` +
+      `❌ Failed: ${failCount}`);
+};
+
+function uploadSingleToCloudinary(fileBlob, originalName, category, onProgress) {
+return new Promise((resolve, reject) => {
+const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+const xhr = new XMLHttpRequest();
+const formData = new FormData();
+
+formData.append("file", fileBlob, originalName);
+formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+formData.append("tags", VAULT_TAG);
+formData.append("context", `caption=${originalName}|vault_cat=${category}`);
+
+xhr.timeout = 90000;
+
+xhr.upload.addEventListener("progress", (e) => {
+if (e.lengthComputable && onProgress) {
+const percent = Math.round((e.loaded / e.total) * 100);
+onProgress(percent);
+}
+});
+
+xhr.onreadystatechange = function() {
+if (xhr.readyState === 4) {
+if (xhr.status >= 200 && xhr.status < 300) {
+try {
+resolve(JSON.parse(xhr.responseText));
+} catch (e) {
+reject(new Error("Invalid response from server"));
+}
+} else {
+let errMsg = `HTTP ${xhr.status}`;
+try {
+const errJson = JSON.parse(xhr.responseText);
+if (errJson.error && errJson.error.message) errMsg = errJson.error.message;
+} catch (_) {}
+reject(new Error(errMsg));
+}
+}
+};
+
+xhr.ontimeout = () => reject(new Error("Network timeout"));
+xhr.onerror = () => reject(new Error("Connection error"));
+
+xhr.open("POST", url, true);
+xhr.send(formData);
+});
+}
+
+function detectFileCategory(mimeType, fileName) {
+const m = (mimeType || "").toLowerCase();
+const n = (fileName || "").toLowerCase();
+if (m.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic)$/.test(n)) return "image";
+if (m.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(n)) return "audio";
+if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/.test(n)) return "video";
+return "text";
+}
+
+// Text Note Modal
+window.openTextModal = () => {
+document.getElementById('textModal').classList.remove('hidden');
+document.getElementById('textModal').classList.add('flex');
+};
+window.closeTextModal = () => {
+document.getElementById('textModal').classList.add('hidden');
+document.getElementById('textModal').classList.remove('flex');
+};
+window.saveTextNote = async () => {
+const title = document.getElementById('noteTitle').value.trim() || "Note_" + Date.now();
+const content = document.getElementById('noteContent').value.trim();
+if (!content) return alert("Please write some text first.");
+
+const btn = document.getElementById('saveNoteBtn');
+btn.disabled = true;
+btn.textContent = "Saving to Cloud...";
+
+try {
+const fileName = title.endsWith(".txt") ? title : `${title}.txt`;
+const textBlob = new Blob([content], { type: "text/plain" });
+const cloudData = await uploadSingleToCloudinary(textBlob, fileName, "text", null);
+
+const newItem = {
+id: cloudData.public_id,
+name: fileName,
+url: cloudData.secure_url,
+category: "text",
+resourceType: "raw",
+format: "txt",
+bytes: textBlob.size,
+cachedText: content,
+createdAt: Date.now(),
+dateStr: new Date().toLocaleString()
+};
+
+if (currentTab === 'secret') secretIds.add(newItem.id);
+
+allItems.unshift(newItem);
+
+document.getElementById('noteTitle').value = "";
+document.getElementById('noteContent').value = "";
+closeTextModal();
+renderItems();
+} catch (e) {
+showError("Text cloud save failed: " + e.message);
+} finally {
+btn.disabled = false;
+btn.textContent = "Save to Cloud";
+}
+};
+
+// Tabs & PIN Logic
+window.switchTab = function(tab) {
+if (tab === 'secret' && sessionStorage.getItem('secret_unlocked') !== 'true') {
+pendingTab = tab;
+document.getElementById('secretPinInput').value = '';
+document.getElementById('pinModal').classList.remove('hidden');
+document.getElementById('pinModal').classList.add('flex');
+return;
+}
+
+currentTab = tab;
+document.querySelectorAll('.tab-btn').forEach(btn => {
+if (btn.dataset.tab === tab) {
+btn.classList.add('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
+btn.classList.remove('text-emerald-50');
+} else {
+btn.classList.remove('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
+btn.classList.add('text-emerald-50');
+}
+});
+renderItems();
+};
+
+window.closePinModal = function() {
+document.getElementById('pinModal').classList.add('hidden');
+document.getElementById('pinModal').classList.remove('flex');
+pendingTab = null;
+};
+
+window.verifyPin = function() {
+const val = document.getElementById('secretPinInput').value.trim();
+if (val === DEFAULT_SECRET_PIN) {
+sessionStorage.setItem('secret_unlocked', 'true');
+closePinModal();
+if (pendingTab) switchTab(pendingTab);
+} else {
+alert("Incorrect PIN!");
+document.getElementById('secretPinInput').value = '';
+}
+};
+
+function getFilteredItems() {
+if (currentTab === 'secret') {
+return allItems.filter(item => secretIds.has(item.id));
+} else if (currentTab === 'all') {
+return allItems.filter(item => !secretIds.has(item.id));
+} else {
+return allItems.filter(item => item.category === currentTab && !secretIds.has(item.id));
+}
+}
+
+function renderItems() {
+const grid = document.getElementById('mediaGrid');
+const emptyState = document.getElementById('emptyState');
+const emptyText = document.getElementById('emptyText');
+const filtered = getFilteredItems();
+
+grid.innerHTML = "";
+
+if (filtered.length === 0) {
+emptyState.classList.remove('hidden');
+emptyText.textContent = `No items in ${currentTab} category yet.`;
+return;
+}
+emptyState.classList.add('hidden');
+
+filtered.forEach(item => {
+const isSelected = selectedIds.has(item.id);
+const card = document.createElement('div');
+card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
+
+let mediaPreview = "";
+if (item.category === "image") {
+mediaPreview = `<img src="${item.url}" alt="${escapeHtml(item.name)}" loading="lazy" class="w-full h-36 object-cover bg-slate-100" />`;
+} else if (item.category === "video") {
+mediaPreview = `
+<div class="w-full h-36 bg-slate-900 flex items-center justify-center relative">
+<video src="${item.url}#t=0.5" preload="metadata" class="w-full h-full object-cover opacity-80"></video>
+<div class="absolute w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow">
+<i class="fa-solid fa-play ml-0.5"></i>
+</div>
+</div>`;
+} else if (item.category === "audio") {
+mediaPreview = `
+<div class="w-full h-36 bg-gradient-to-br from-emerald-50 to-teal-100 flex flex-col items-center justify-center text-[#10b981]">
+<i class="fa-solid fa-microphone-lines text-3xl mb-1"></i>
+<span class="text-[11px] font-bold uppercase tracking-wider">Voice Cloud</span>
+</div>`;
+} else {
+mediaPreview = `
+<div class="w-full h-36 bg-amber-50/70 p-3 flex flex-col justify-between items-center text-center">
+<div class="mt-4 w-11 h-11 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+<i class="fa-solid fa-file-lines"></i>
+</div>
+<span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Cloud Text / Doc</span>
+</div>`;
+}
+
+card.innerHTML = `
+<div onclick="handleCardClick('${item.id}')" class="cursor-pointer">
+${mediaPreview}
+</div>
+${isSelectMode ? `
+<div onclick="toggleItemSelect('${item.id}')" class="absolute top-2.5 left-2.5 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer shadow ${isSelected ? 'bg-[#10b981] text-white' : 'bg-white/90 text-slate-400 border border-slate-300'}">
+<i class="fa-solid fa-check text-xs"></i>
+</div>` : ''}
+<div class="p-2.5 flex items-center justify-between gap-1 bg-white">
+<p onclick="handleCardClick('${item.id}')" class="text-xs font-bold text-slate-700 truncate flex-1 cursor-pointer">${escapeHtml(item.name)}</p>
+<div class="flex items-center gap-1">
+<button onclick="showInfo('${item.id}')" title="Info" class="w-7 h-7 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center text-xs">
+<i class="fa-solid fa-circle-info"></i>
+</button>
+<button onclick="downloadItem('${item.id}')" title="Download" class="w-7 h-7 rounded-full hover:bg-emerald-50 text-[#10b981] flex items-center justify-center text-xs">
+<i class="fa-solid fa-download"></i>
+</button>
+</div>
+</div>
+`;
+grid.appendChild(card);
+});
+}
+
+// Multi-Select
+window.toggleSelectMode = function() {
+isSelectMode = !isSelectMode;
+selectedIds.clear();
+updateSelectUI();
+renderItems();
+};
+
+window.toggleItemSelect = function(id) {
+if (selectedIds.has(id)) selectedIds.delete(id);
+else selectedIds.add(id);
+updateSelectUI();
+renderItems();
+};
+
+window.selectAllVisible = function() {
+getFilteredItems().forEach(item => selectedIds.add(item.id));
+updateSelectUI();
+renderItems();
+};
+
+window.clearSelection = function() {
+isSelectMode = false;
+selectedIds.clear();
+updateSelectUI();
+renderItems();
+};
+
+function updateSelectUI() {
+const bar = document.getElementById('multiSelectBar');
+const count = document.getElementById('selectedCount');
+if (isSelectMode) {
+bar.classList.remove('hidden');
+bar.classList.add('flex');
+count.textContent = `${selectedIds.size} Selected`;
+} else {
+bar.classList.add('hidden');
+bar.classList.remove('flex');
+}
+}
+
+window.deleteSelected = function() {
+if (selectedIds.size === 0) return;
+if (!confirm(`Hide ${selectedIds.size} selected item(s) from dashboard?`)) return;
+
+selectedIds.forEach(id => hiddenIds.add(id));
+localStorage.setItem("ronock_hidden_ids", JSON.stringify(Array.from(hiddenIds)));
+allItems = allItems.filter(item => !selectedIds.has(item.id));
+
+clearSelection();
+renderItems();
+};
+
+// Preview & Info
+window.handleCardClick = async function(id) {
+if (isSelectMode) {
+toggleItemSelect(id);
+return;
+}
+const item = allItems.find(i => i.id === id);
+if (!item) return;
+
+const modal = document.getElementById('previewModal');
+const body = document.getElementById('previewBody');
+document.getElementById('previewTitle').textContent = item.name;
+document.getElementById('previewInfoBtn').onclick = () => showInfo(id);
+document.getElementById('previewDownloadBtn').onclick = () => downloadItem(id);
+
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+
+if (item.category === "image") {
+body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
+} else if (item.category === "video") {
+body.innerHTML = `<video src="${item.url}" controls autoplay class="max-h-full max-w-full rounded-xl"></video>`;
+} else if (item.category === "audio") {
+body.innerHTML = `
+<div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
+<i class="fa-solid fa-music text-5xl text-[#10b981] mb-4"></i>
+<p class="font-bold mb-4">${escapeHtml(item.name)}</p>
+<audio src="${item.url}" controls autoplay class="w-full"></audio>
+</div>`;
+} else {
+body.innerHTML = `<div class="text-center text-slate-300"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><p class="text-xs">Loading cloud text...</p></div>`;
+try {
+const textContent = item.cachedText || await (await fetch(item.url)).text();
+item.cachedText = textContent;
+body.innerHTML = `
+<div class="bg-white text-slate-800 p-6 rounded-3xl max-w-lg w-full max-h-[80vh] overflow-auto">
+<h4 class="font-extrabold text-lg mb-3 border-b pb-2">${escapeHtml(item.name)}</h4>
+<p class="text-sm whitespace-pre-wrap leading-relaxed">${escapeHtml(textContent)}</p>
+</div>`;
+} catch (e) {
+body.innerHTML = `<div class="text-center"><p class="mb-3">Preview unavailable.</p><a href="${item.url}" target="_blank" class="bg-[#10b981] px-4 py-2 rounded-xl text-sm font-bold">Open File</a></div>`;
+}
+}
+};
+
+window.closePreview = function() {
+const modal = document.getElementById('previewModal');
+document.getElementById('previewBody').innerHTML = "";
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+};
+
+window.showInfo = function(id) {
+const item = allItems.find(i => i.id === id);
+if (!item) return;
+
+const sizeKB = item.bytes ? (item.bytes / 1024).toFixed(1) + " KB" : "Cloud Stored";
+const dims = (item.width && item.height) ? `${item.width} × ${item.height} px` : "N/A";
+
+document.getElementById('infoDetails').innerHTML = `
+<div class="flex justify-between"><span class="text-slate-400">Name:</span><span class="font-bold text-right truncate max-w-[200px]">${escapeHtml(item.name)}</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Category:</span><span class="font-bold uppercase text-[#10b981]">${item.category}</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Size:</span><span class="font-semibold">${sizeKB}</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Dimensions:</span><span class="font-semibold">${dims}</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Storage:</span><span class="font-bold text-emerald-600">Permanent Cloud</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Uploaded:</span><span class="font-semibold">${item.dateStr || "Synced"}</span></div>`;
+
+document.getElementById('infoDownloadBtn').onclick = () => downloadItem(id);
+document.getElementById('infoModal').classList.remove('hidden');
+document.getElementById('infoModal').classList.add('flex');
+};
+
+window.closeInfoModal = function() {
+document.getElementById('infoModal').classList.add('hidden');
+document.getElementById('infoModal').classList.remove('flex');
+};
+
+window.downloadItem = async function(id) {
+const item = allItems.find(i => i.id === id);
+if (!item) return;
+
+try {
+const response = await fetch(item.url);
+const blob = await response.blob();
+const link = document.createElement("a");
+link.href = URL.createObjectURL(blob);
+link.download = item.name || "ronock_cloud_file";
+link.click();
+} catch (e) {
+window.open(item.url, "_blank");
+}
+};
+
+function showError(msg) {
+const el = document.getElementById('errorAlert');
+document.getElementById('errorAlertText').textContent = msg;
+el.classList.remove('hidden');
+}
+
+function escapeHtml(str) {
+if (!str) return "";
+return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+</script>
 </body>
 </html>
