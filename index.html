@@ -71,16 +71,23 @@ animation: pulse-border 1.5s infinite;
 </button>
 </div>
 
-<div id="multiSelectBar" class="hidden items-center justify-between bg-emerald-900/90 px-4 py-2 rounded-2xl mb-2 text-sm">
-<div class="flex items-center gap-3">
+<!-- Multi-Select Action Bar -->
+<div id="multiSelectBar" class="hidden items-center justify-between bg-emerald-900/95 px-3 py-2 rounded-2xl mb-2 text-xs sm:text-sm gap-2">
+<div class="flex items-center gap-2 shrink-0">
 <button onclick="clearSelection()" class="text-emerald-200 hover:text-white">
-<i class="fa-solid fa-xmark text-lg"></i>
+<i class="fa-solid fa-xmark text-base"></i>
 </button>
-<span id="selectedCount" class="font-bold">0 Selected</span>
+<span id="selectedCount" class="font-bold whitespace-nowrap">0 Selected</span>
 </div>
-<div class="flex items-center gap-3">
-<button onclick="selectAllVisible()" class="text-xs bg-emerald-700 px-2.5 py-1 rounded-lg font-semibold">Select All</button>
-<button onclick="deleteSelected()" class="bg-rose-500 hover:bg-rose-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+<div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+<button onclick="selectAllVisible()" class="bg-emerald-700 hover:bg-emerald-600 px-2.5 py-1.5 rounded-xl font-semibold whitespace-nowrap">All</button>
+<button onclick="downloadSelected()" class="bg-sky-500 hover:bg-sky-600 px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 whitespace-nowrap">
+<i class="fa-solid fa-download"></i> Download
+</button>
+<button id="moveSecretBtn" onclick="moveSelectedToSecret()" class="bg-amber-500 hover:bg-amber-600 px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 whitespace-nowrap">
+<i class="fa-solid fa-key"></i> Move to Secret
+</button>
+<button onclick="deleteSelected()" class="bg-rose-500 hover:bg-rose-600 px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 whitespace-nowrap">
 <i class="fa-solid fa-trash"></i> Remove
 </button>
 </div>
@@ -106,7 +113,8 @@ animation: pulse-border 1.5s infinite;
 </label>
 <input type="file" id="fileInput" multiple accept="image/*,video/*,audio/*,.txt,.pdf,.doc,.docx" class="hidden" onchange="handleFileSelect(event)" />
 
-<button onclick="openTextModal()" class="bg-white hover:bg-slate-50 active:scale-95 transition text-emerald-700 border border-emerald-200 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm flex items-center gap-2">
+<!-- Add Note Button (Only visible in Text tab) -->
+<button id="addNoteBtn" onclick="openTextModal()" class="hidden bg-white hover:bg-slate-50 active:scale-95 transition text-emerald-700 border border-emerald-200 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-sm items-center gap-2">
 <i class="fa-solid fa-pen-to-square"></i>
 <span>Add Note</span>
 </button>
@@ -552,6 +560,32 @@ return;
 }
 
 currentTab = tab;
+
+// Show "Add Note" ONLY when in Text tab
+const addNoteBtn = document.getElementById('addNoteBtn');
+if (tab === 'text') {
+addNoteBtn.classList.remove('hidden');
+addNoteBtn.classList.add('flex');
+} else {
+addNoteBtn.classList.add('hidden');
+addNoteBtn.classList.remove('flex');
+}
+
+// Update Move to Secret button label depending on tab
+const moveSecretBtn = document.getElementById('moveSecretBtn');
+if (moveSecretBtn) {
+if (tab === 'secret') {
+moveSecretBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> Remove Secret`;
+} else {
+moveSecretBtn.innerHTML = `<i class="fa-solid fa-key"></i> Move to Secret`;
+}
+}
+
+// Clear selection when switching tabs
+if (isSelectMode) {
+clearSelection();
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
 if (btn.dataset.tab === tab) {
 btn.classList.add('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
@@ -663,7 +697,7 @@ grid.appendChild(card);
 });
 }
 
-// Multi-Select
+// Multi-Select Actions
 window.toggleSelectMode = function() {
 isSelectMode = !isSelectMode;
 selectedIds.clear();
@@ -703,6 +737,43 @@ bar.classList.add('hidden');
 bar.classList.remove('flex');
 }
 }
+
+// Batch Download Selected Files
+window.downloadSelected = async function() {
+if (selectedIds.size === 0) {
+alert("Please select at least one file to download.");
+return;
+}
+
+const idsToDownload = Array.from(selectedIds);
+for (let i = 0; i < idsToDownload.length; i++) {
+await downloadItem(idsToDownload[i]);
+await new Promise(resolve => setTimeout(resolve, 400));
+}
+clearSelection();
+};
+
+// Move Selected Items to Secret Vault (or Remove from Secret if inside Secret tab)
+window.moveSelectedToSecret = function() {
+if (selectedIds.size === 0) {
+alert("Please select at least one file.");
+return;
+}
+
+const count = selectedIds.size;
+if (currentTab === 'secret') {
+selectedIds.forEach(id => secretIds.delete(id));
+localStorage.setItem("ronock_secret_ids", JSON.stringify(Array.from(secretIds)));
+alert(`🔓 ${count} item(s) moved back to normal vault!`);
+} else {
+selectedIds.forEach(id => secretIds.add(id));
+localStorage.setItem("ronock_secret_ids", JSON.stringify(Array.from(secretIds)));
+alert(`🔑 ${count} item(s) moved to Secret Vault!`);
+}
+
+clearSelection();
+renderItems();
+};
 
 window.deleteSelected = function() {
 if (selectedIds.size === 0) return;
