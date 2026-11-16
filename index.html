@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>RONOCK - Permanent Cloud Vault</title>
+<link rel="icon" type="image/png" href="https://i.ibb.co/JRrxsJps/image.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <style>
@@ -35,6 +36,7 @@ animation: pulse-border 1.5s infinite;
 <!-- Strict Login Screen -->
 <div id="login-screen" class="fixed inset-0 z-50 bg-[#16a085] flex items-center justify-center p-4">
 <div class="bg-white p-7 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+<img src="https://ibb.co.com/YFdDtyBT" onerror="this.src='https://i.ibb.co/JRrxsJps/image.png'" alt="Profile" class="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-[#1abc9c] shadow-sm">
 <h2 class="text-2xl font-extrabold text-[#1abc9c] mb-1">RONOCK CHERAGEE</h2>
 <p class="text-xs text-slate-400 mb-6 font-semibold uppercase tracking-wider">School Memories Vault</p>
 <div id="login-error" class="hidden bg-rose-50 text-rose-600 text-xs font-bold p-2.5 rounded-xl mb-4">Incorrect Username or Password!</div>
@@ -50,7 +52,11 @@ animation: pulse-border 1.5s infinite;
 <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
 <div class="flex items-center justify-between gap-2 mb-3">
 <div class="flex items-center gap-2">
+<!-- Profile / Logo Image & Title -->
+<div class="flex items-center gap-2">
+<img src="https://ibb.co.com/YFdDtyBT" onerror="this.src='https://i.ibb.co/JRrxsJps/image.png'" alt="Logo" class="w-9 h-9 rounded-full object-cover bg-white p-0.5 shadow-sm">
 <h1 class="text-xl font-extrabold tracking-wide">RONOCK</h1>
+</div>
 <span id="sync-status" class="bg-emerald-800/60 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Cloud Sync Active ☁️</span>
 </div>
 
@@ -363,7 +369,6 @@ statusText.textContent = `Uploading [${currentNum}/${total}]: 0%`;
 try {
 const cat = detectFileCategory(file.type, file.name);
 
-// Check if same filename already exists in vault to overwrite
 const existingIndex = allItems.findIndex(item => item.name.toLowerCase() === file.name.toLowerCase());
 const isOverwriting = existingIndex !== -1;
 
@@ -389,10 +394,12 @@ createdAt: Date.now(),
 dateStr: new Date().toLocaleString()
 };
 
-if (currentTab === 'secret') secretIds.add(newItem.id);
+if (currentTab === 'secret') {
+secretIds.add(newItem.id);
+localStorage.setItem("ronock_secret_ids", JSON.stringify(Array.from(secretIds)));
+}
 
 if (isOverwriting) {
-// Replace old entry with updated one to avoid duplicates
 allItems[existingIndex] = newItem;
 overwriteCount++;
 } else {
@@ -415,7 +422,6 @@ statusPill.classList.add('hidden');
 statusPill.classList.remove('flex');
 }, 1200);
 
-// Detailed Import Summary Notification
 alert(`📥 Import Summary:\n` +
       `---------------------------\n` +
       `📂 Total Selected: ${total}\n` +
@@ -516,7 +522,10 @@ createdAt: Date.now(),
 dateStr: new Date().toLocaleString()
 };
 
-if (currentTab === 'secret') secretIds.add(newItem.id);
+if (currentTab === 'secret') {
+secretIds.add(newItem.id);
+localStorage.setItem("ronock_secret_ids", JSON.stringify(Array.from(secretIds)));
+}
 
 allItems.unshift(newItem);
 
