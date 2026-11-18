@@ -14,15 +14,15 @@ font-family: 'Plus Jakarta Sans', sans-serif;
 background-color: #f4f7f6;
 -webkit-tap-highlight-color: transparent;
 user-select: none;
+overscroll-behavior-y: contain;
 }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .one-ui-card {
-border-radius: 26px;
+border-radius: 24px;
 background: #ffffff;
-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-content-visibility: auto;
-contain-intrinsic-size: 200px;
+box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+contain: layout style paint;
 }
 @keyframes pulse-border {
 0%, 100% { border-color: #10b981; }
@@ -48,13 +48,12 @@ animation: pulse-border 1.5s infinite;
 </div>
 </div>
 
-<!-- Main App Content (Hidden until login) -->
+<!-- Main App Content -->
 <div id="app-content" class="hidden">
-<header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px] transition-all">
+<header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px]">
 <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
 <div class="flex items-center justify-between gap-2 mb-3">
 <div class="flex items-center gap-2 min-w-0">
-<!-- Profile / Logo Image & Title -->
 <div class="flex items-center gap-2 shrink-0">
 <img src="https://ibb.co.com/YFdDtyBT" onerror="this.src='https://i.ibb.co/JRrxsJps/image.png'" alt="Logo" class="w-9 h-9 rounded-full object-cover bg-white p-0.5 shadow-sm shrink-0">
 <h1 class="text-lg sm:text-xl font-extrabold tracking-wide whitespace-nowrap">RONOCK</h1>
@@ -62,7 +61,7 @@ animation: pulse-border 1.5s infinite;
 <span id="sync-status" class="bg-emerald-800/60 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ml-1">Cloud Sync Active ☁️</span>
 </div>
 
-<div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge shrink-0">
+<div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge shrink-0">
 <i class="fa-solid fa-hourglass-half fa-spin text-amber-300"></i>
 <span id="uploadStatusText">Uploading [0/0]: 0%</span>
 </div>
@@ -155,12 +154,12 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
-<div id="scrollSentinel" class="h-6 w-full"></div>
+<div id="scrollSentinel" class="h-10 w-full"></div>
 </main>
 </div>
 
 <!-- Secret PIN Modal -->
-<div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+<div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
 <div class="bg-white p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
 <h3 class="text-lg font-extrabold text-slate-800 mb-1">Enter Secret PIN 🔑</h3>
 <p class="text-xs text-slate-400 mb-4">Enter 4-digit PIN to access protected files</p>
@@ -173,7 +172,7 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <!-- Add Text Note Modal -->
-<div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+<div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
 <div class="one-ui-card w-full max-w-md p-6">
 <div class="flex items-center justify-between mb-4">
 <h3 class="text-lg font-extrabold text-slate-800">Save Permanent Text</h3>
@@ -191,7 +190,7 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <!-- Info Details Modal -->
-<div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+<div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 p-4">
 <div class="one-ui-card w-full max-w-md p-6">
 <div class="flex items-center justify-between mb-4">
 <h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
@@ -227,7 +226,7 @@ animation: pulse-border 1.5s infinite;
 </button>
 </div>
 </div>
-<div id="previewBody" class="flex-1 flex items-center justify-center p-4 overflow-auto"></div>
+<div id="previewBody" class="flex-1 flex flex-col items-center justify-center p-4 overflow-auto"></div>
 </div>
 
 <script>
@@ -248,30 +247,30 @@ let selectedIds = new Set();
 let isUploading = false;
 let pendingTab = null;
 
-// Seamless background progressive rendering (No button needed, all items load smoothly as you scroll)
-const BATCH_SIZE = 30;
+// Fast & ultra-smooth progressive batching (60fps scroll on mobile)
+const BATCH_SIZE = 24;
 let renderedCount = 0;
 
-// Sharp HD thumbnail for grid cards (Full 100% original resolution is used in Preview & Download)
-function getSharpCardUrl(item) {
+// Fast, sharp & lightweight card thumbnails (Full 100% original resolution is loaded in Preview & Download)
+function getFastCardUrl(item) {
 if (!item || !item.url) return "";
 if (item.category === "image") {
-return item.url.replace("/upload/", "/upload/w_900,c_limit,q_100/");
+return item.url.replace("/upload/", "/upload/w_480,c_limit,q_auto:good,f_auto/");
 }
 if (item.category === "video") {
 return item.url
-.replace("/upload/", "/upload/so_0.5,w_800,c_limit,q_95,f_jpg/")
+.replace("/upload/", "/upload/so_0.5,w_480,c_limit,q_auto:good,f_jpg/")
 .replace(/\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/i, ".jpg");
 }
 return item.url;
 }
 
-// Universal H.264 MP4 stream URL so iPhone HEVC (.mov) & 10-bit videos show video + audio properly in Chrome
-function getPlayableVideoUrl(url) {
-if (!url) return "";
-return url
-.replace("/upload/", "/upload/f_mp4,vc_h264,ac_aac,q_auto:best/")
-.replace(/\.(mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".mp4");
+// Build multiple compatible H.264 MP4 stream URLs for iPhone .MOV / HEVC videos
+function getCompatibleVideoSources(item) {
+const baseMp4 = item.url.replace(/\.(mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".mp4");
+const h264Stream = baseMp4.replace("/upload/", "/upload/f_mp4,vc_h264,ac_aac,q_auto/");
+const mobileStream = baseMp4.replace("/upload/", "/upload/w_720,c_limit,f_mp4,vc_h264,ac_aac/");
+return { h264Stream, mobileStream, originalUrl: item.url };
 }
 
 // Login Logic
@@ -661,9 +660,9 @@ return allItems.filter(item => item.category === currentTab && !secretIds.has(it
 function buildCardElement(item) {
 const isSelected = selectedIds.has(item.id);
 const card = document.createElement('div');
-card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
+card.className = `one-ui-card overflow-hidden relative border-2 ${isSelected ? 'border-[#10b981]' : 'border-transparent'}`;
 
-const cardImgUrl = getSharpCardUrl(item);
+const cardImgUrl = getFastCardUrl(item);
 let mediaPreview = "";
 
 if (item.category === "image") {
@@ -744,11 +743,17 @@ grid.appendChild(fragment);
 renderedCount = targetCount;
 }
 
-window.addEventListener('scroll', () => {
-if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
+// Smooth hardware-accelerated IntersectionObserver for silky-smooth scrolling
+const sentinelObserver = new IntersectionObserver((entries) => {
+if (entries[0].isIntersecting) {
 renderItems(false);
 }
-}, { passive: true });
+}, { rootMargin: '500px' });
+
+window.addEventListener('DOMContentLoaded', () => {
+const sentinel = document.getElementById('scrollSentinel');
+if (sentinel) sentinelObserver.observe(sentinel);
+});
 
 // Multi-Select Actions
 window.toggleSelectMode = function() {
@@ -838,7 +843,7 @@ clearSelection();
 renderItems(true);
 };
 
-// Fullscreen Preview (Plays H.264 MP4 stream so HEVC/MOV videos show video + audio properly)
+// Fullscreen Preview (Automatically transcodes iPhone HEVC .MOV to playable H.264 MP4 stream)
 window.handleCardClick = async function(id) {
 if (isSelectMode) {
 toggleItemSelect(id);
@@ -859,8 +864,27 @@ modal.classList.add('flex');
 if (item.category === "image") {
 body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
 } else if (item.category === "video") {
-const playableUrl = getPlayableVideoUrl(item.url);
-body.innerHTML = `<video id="activeMediaPlayer" src="${playableUrl}" onerror="this.onerror=null;this.src='${item.url}'" controls autoplay playsinline class="max-h-full max-w-full rounded-xl"></video>`;
+const sources = getCompatibleVideoSources(item);
+const posterUrl = getFastCardUrl(item);
+body.innerHTML = `
+<video id="activeMediaPlayer" poster="${posterUrl}" controls autoplay playsinline class="max-h-[78vh] max-w-full rounded-xl bg-black">
+<source src="${sources.mobileStream}" type="video/mp4">
+<source src="${sources.h264Stream}" type="video/mp4">
+<source src="${sources.originalUrl}">
+</video>
+<div id="videoFallbackNote" class="hidden mt-3 text-center">
+<p class="text-xs text-slate-300 mb-2">iPhone HEVC video format detected — open in phone player for full video:</p>
+<button onclick="downloadItem('${item.id}')" class="bg-[#10b981] text-white text-xs font-bold px-4 py-2 rounded-xl">
+<i class="fa-solid fa-download mr-1"></i> Save & Play in Gallery
+</button>
+</div>
+`;
+const vidEl = document.getElementById('activeMediaPlayer');
+vidEl.addEventListener('loadedmetadata', () => {
+if (vidEl.videoWidth === 0) {
+document.getElementById('videoFallbackNote').classList.remove('hidden');
+}
+});
 } else if (item.category === "audio") {
 body.innerHTML = `
 <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
@@ -889,6 +913,7 @@ const player = document.getElementById('activeMediaPlayer');
 if (player) {
 player.pause();
 player.removeAttribute('src');
+player.innerHTML = "";
 player.load();
 }
 const modal = document.getElementById('previewModal');
