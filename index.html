@@ -21,6 +21,8 @@ user-select: none;
 border-radius: 26px;
 background: #ffffff;
 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+content-visibility: auto;
+contain-intrinsic-size: 200px;
 }
 @keyframes pulse-border {
 0%, 100% { border-color: #10b981; }
@@ -153,13 +155,7 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
-
-<!-- Lightweight Pagination Button to prevent Mobile RAM Crash -->
-<div id="loadMoreWrap" class="hidden mt-6 text-center">
-<button onclick="loadMoreItems()" class="bg-white border border-emerald-200 text-[#10b981] hover:bg-emerald-50 font-bold text-xs px-6 py-3 rounded-2xl shadow-sm active:scale-95 transition">
-Load More Items <i class="fa-solid fa-chevron-down ml-1"></i>
-</button>
-</div>
+<div id="scrollSentinel" class="h-6 w-full"></div>
 </main>
 </div>
 
@@ -252,19 +248,19 @@ let selectedIds = new Set();
 let isUploading = false;
 let pendingTab = null;
 
-// Render limit per batch to keep mobile RAM fast & prevent Chrome "Aw, Snap!" crash
-const PAGE_SIZE = 24;
-let visibleLimit = PAGE_SIZE;
+// Seamless background progressive rendering (No button needed, all items load smoothly as you scroll)
+const BATCH_SIZE = 30;
+let renderedCount = 0;
 
-// Helper to get lightweight thumbnail URLs for grid cards
-function getOptimizedThumbUrl(item) {
+// Sharp HD thumbnail for grid cards (Full 100% original resolution is used in Preview & Download)
+function getSharpCardUrl(item) {
 if (!item || !item.url) return "";
 if (item.category === "image") {
-return item.url.replace("/upload/", "/upload/w_420,c_limit,q_auto,f_auto/");
+return item.url.replace("/upload/", "/upload/w_900,c_limit,q_100/");
 }
 if (item.category === "video") {
 return item.url
-.replace("/upload/", "/upload/so_0.5,w_420,c_limit,q_auto,f_jpg/")
+.replace("/upload/", "/upload/so_0.5,w_800,c_limit,q_95,f_jpg/")
 .replace(/\.(mp4|mov|avi|mkv|webm)$/i, ".jpg");
 }
 return item.url;
@@ -356,10 +352,9 @@ showError("Cloudinary 'Resource list' is locked! Go to Cloudinary Settings > Sec
 
 fetchedItems.sort((a, b) => b.createdAt - a.createdAt);
 allItems = fetchedItems;
-visibleLimit = PAGE_SIZE;
 
 if(loadingEl) loadingEl.classList.add('hidden');
-renderItems();
+renderItems(true);
 };
 
 function classifyResource(rType, format, context) {
@@ -441,7 +436,7 @@ allItems.unshift(newItem);
 successCount++;
 }
 
-renderItems();
+renderItems(true);
 
 } catch (err) {
 console.error(`Failed ${file.name}:`, err);
@@ -566,7 +561,7 @@ allItems.unshift(newItem);
 document.getElementById('noteTitle').value = "";
 document.getElementById('noteContent').value = "";
 closeTextModal();
-renderItems();
+renderItems(true);
 } catch (e) {
 showError("Text cloud save failed: " + e.message);
 } finally {
@@ -586,9 +581,7 @@ return;
 }
 
 currentTab = tab;
-visibleLimit = PAGE_SIZE;
 
-// Show "Add Note" ONLY when in Text tab
 const addNoteBtn = document.getElementById('addNoteBtn');
 if (tab === 'text') {
 addNoteBtn.classList.remove('hidden');
@@ -598,7 +591,6 @@ addNoteBtn.classList.add('hidden');
 addNoteBtn.classList.remove('flex');
 }
 
-// Update Move to Secret button label depending on tab
 const moveSecretBtn = document.getElementById('moveSecretBtn');
 if (moveSecretBtn) {
 if (tab === 'secret') {
@@ -621,12 +613,7 @@ btn.classList.remove('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
 btn.classList.add('text-emerald-50');
 }
 });
-renderItems();
-};
-
-window.loadMoreItems = function() {
-visibleLimit += PAGE_SIZE;
-renderItems();
+renderItems(true);
 };
 
 window.closePinModal = function() {
@@ -657,47 +644,20 @@ return allItems.filter(item => item.category === currentTab && !secretIds.has(it
 }
 }
 
-function renderItems() {
-const grid = document.getElementById('mediaGrid');
-const emptyState = document.getElementById('emptyState');
-const emptyText = document.getElementById('emptyText');
-const loadMoreWrap = document.getElementById('loadMoreWrap');
-const filtered = getFilteredItems();
-
-grid.innerHTML = "";
-
-if (filtered.length === 0) {
-emptyState.classList.remove('hidden');
-loadMoreWrap.classList.add('hidden');
-emptyText.textContent = `No items in ${currentTab} category yet.`;
-return;
-}
-emptyState.classList.add('hidden');
-
-const itemsToRender = filtered.slice(0, visibleLimit);
-if (filtered.length > visibleLimit) {
-loadMoreWrap.classList.remove('hidden');
-} else {
-loadMoreWrap.classList.add('hidden');
-}
-
-const fragment = document.createDocumentFragment();
-
-itemsToRender.forEach(item => {
+function buildCardElement(item) {
 const isSelected = selectedIds.has(item.id);
 const card = document.createElement('div');
 card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
 
-const thumbUrl = getOptimizedThumbUrl(item);
+const cardImgUrl = getSharpCardUrl(item);
 let mediaPreview = "";
 
 if (item.category === "image") {
-mediaPreview = `<img src="${thumbUrl}" onerror="this.onerror=null;this.src='${item.url}'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-36 object-cover bg-slate-100" />`;
+mediaPreview = `<img src="${cardImgUrl}" onerror="this.onerror=null;this.src='${item.url}'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-36 object-cover bg-slate-100" />`;
 } else if (item.category === "video") {
-// Lightweight static JPG thumbnail instead of heavy <video> decoder to prevent mobile RAM crash
 mediaPreview = `
 <div class="w-full h-36 bg-slate-900 flex items-center justify-center relative overflow-hidden">
-<img src="${thumbUrl}" onerror="this.style.display='none'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-85" />
+<img src="${cardImgUrl}" onerror="this.style.display='none'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-85" />
 <div class="absolute w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow">
 <i class="fa-solid fa-play ml-0.5"></i>
 </div>
@@ -738,38 +698,71 @@ ${isSelectMode ? `
 </div>
 </div>
 `;
-fragment.appendChild(card);
-});
-
-grid.appendChild(fragment);
+return card;
 }
+
+function renderItems(reset = true) {
+const grid = document.getElementById('mediaGrid');
+const emptyState = document.getElementById('emptyState');
+const emptyText = document.getElementById('emptyText');
+const filtered = getFilteredItems();
+
+if (reset) {
+grid.innerHTML = "";
+renderedCount = 0;
+}
+
+if (filtered.length === 0) {
+emptyState.classList.remove('hidden');
+emptyText.textContent = `No items in ${currentTab} category yet.`;
+return;
+}
+emptyState.classList.add('hidden');
+
+const targetCount = reset ? Math.min(BATCH_SIZE, filtered.length) : Math.min(renderedCount + BATCH_SIZE, filtered.length);
+if (renderedCount >= targetCount) return;
+
+const fragment = document.createDocumentFragment();
+for (let i = renderedCount; i < targetCount; i++) {
+fragment.appendChild(buildCardElement(filtered[i]));
+}
+grid.appendChild(fragment);
+renderedCount = targetCount;
+}
+
+// Seamless automatic infinite scroll (No Load More button, everything loads smoothly as you scroll)
+window.addEventListener('scroll', () => {
+if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
+renderItems(false);
+}
+}, { passive: true });
 
 // Multi-Select Actions
 window.toggleSelectMode = function() {
 isSelectMode = !isSelectMode;
 selectedIds.clear();
 updateSelectUI();
-renderItems();
+renderItems(true);
 };
 
 window.toggleItemSelect = function(id) {
 if (selectedIds.has(id)) selectedIds.delete(id);
 else selectedIds.add(id);
 updateSelectUI();
-renderItems();
+renderItems(true);
 };
 
 window.selectAllVisible = function() {
 getFilteredItems().forEach(item => selectedIds.add(item.id));
 updateSelectUI();
-renderItems();
+renderItems(true);
 };
 
 window.clearSelection = function() {
 isSelectMode = false;
 selectedIds.clear();
 updateSelectUI();
-renderItems();
+renderItems(true);
 };
 
 function updateSelectUI() {
@@ -817,7 +810,7 @@ alert(`🔑 ${count} item(s) moved to Secret Vault!`);
 }
 
 clearSelection();
-renderItems();
+renderItems(true);
 };
 
 window.deleteSelected = function() {
@@ -829,10 +822,10 @@ localStorage.setItem("ronock_hidden_ids", JSON.stringify(Array.from(hiddenIds)))
 allItems = allItems.filter(item => !selectedIds.has(item.id));
 
 clearSelection();
-renderItems();
+renderItems(true);
 };
 
-// Preview & Info (Properly releases media memory when closed)
+// Fullscreen Preview (Loads 100% Untouched Original Resolution)
 window.handleCardClick = async function(id) {
 if (isSelectMode) {
 toggleItemSelect(id);
@@ -943,4 +936,4 @@ return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '
 }
 </script>
 </body>
-      </html>
+</html>
