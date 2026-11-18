@@ -261,9 +261,17 @@ return item.url.replace("/upload/", "/upload/w_900,c_limit,q_100/");
 if (item.category === "video") {
 return item.url
 .replace("/upload/", "/upload/so_0.5,w_800,c_limit,q_95,f_jpg/")
-.replace(/\.(mp4|mov|avi|mkv|webm)$/i, ".jpg");
+.replace(/\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/i, ".jpg");
 }
 return item.url;
+}
+
+// Universal H.264 MP4 stream URL so iPhone HEVC (.mov) & 10-bit videos show video + audio properly in Chrome
+function getPlayableVideoUrl(url) {
+if (!url) return "";
+return url
+.replace("/upload/", "/upload/f_mp4,vc_h264,ac_aac,q_auto:best/")
+.replace(/\.(mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".mp4");
 }
 
 // Login Logic
@@ -324,7 +332,7 @@ const cleanName = (item.context && item.context.custom && item.context.custom.ca
 : (item.public_id.split('/').pop() + ext);
 
 const fileUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/upload/v${item.version}/${item.public_id}${ext}`;
-const category = classifyResource(rType, item.format, item.context);
+const category = classifyResource(rType, item.format, item.context, cleanName, item.width);
 
 fetchedItems.push({
 id: item.public_id,
@@ -357,14 +365,20 @@ if(loadingEl) loadingEl.classList.add('hidden');
 renderItems(true);
 };
 
-function classifyResource(rType, format, context) {
+function classifyResource(rType, format, context, fileName = "", width = null) {
 if (context && context.custom && context.custom.vault_cat) {
 return context.custom.vault_cat;
 }
 const fmt = (format || "").toLowerCase();
+const lowerName = (fileName || "").toLowerCase();
 if (rType === 'image') return 'image';
 if (rType === 'video') {
-if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt)) return 'audio';
+if (/\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/.test(lowerName) || ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', '3gp'].includes(fmt) || (width && width > 0)) {
+return 'video';
+}
+if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt) || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(lowerName)) {
+return 'audio';
+}
 return 'video';
 }
 return 'text';
@@ -510,8 +524,8 @@ function detectFileCategory(mimeType, fileName) {
 const m = (mimeType || "").toLowerCase();
 const n = (fileName || "").toLowerCase();
 if (m.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic)$/.test(n)) return "image";
+if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/.test(n)) return "video";
 if (m.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(n)) return "audio";
-if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/.test(n)) return "video";
 return "text";
 }
 
@@ -730,7 +744,6 @@ grid.appendChild(fragment);
 renderedCount = targetCount;
 }
 
-// Seamless automatic infinite scroll (No Load More button, everything loads smoothly as you scroll)
 window.addEventListener('scroll', () => {
 if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
 renderItems(false);
@@ -825,7 +838,7 @@ clearSelection();
 renderItems(true);
 };
 
-// Fullscreen Preview (Loads 100% Untouched Original Resolution)
+// Fullscreen Preview (Plays H.264 MP4 stream so HEVC/MOV videos show video + audio properly)
 window.handleCardClick = async function(id) {
 if (isSelectMode) {
 toggleItemSelect(id);
@@ -846,7 +859,8 @@ modal.classList.add('flex');
 if (item.category === "image") {
 body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
 } else if (item.category === "video") {
-body.innerHTML = `<video id="activeMediaPlayer" src="${item.url}" controls autoplay playsinline class="max-h-full max-w-full rounded-xl"></video>`;
+const playableUrl = getPlayableVideoUrl(item.url);
+body.innerHTML = `<video id="activeMediaPlayer" src="${playableUrl}" onerror="this.onerror=null;this.src='${item.url}'" controls autoplay playsinline class="max-h-full max-w-full rounded-xl"></video>`;
 } else if (item.category === "audio") {
 body.innerHTML = `
 <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
