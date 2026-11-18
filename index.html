@@ -153,6 +153,13 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
+
+<!-- Lightweight Pagination Button to prevent Mobile RAM Crash -->
+<div id="loadMoreWrap" class="hidden mt-6 text-center">
+<button onclick="loadMoreItems()" class="bg-white border border-emerald-200 text-[#10b981] hover:bg-emerald-50 font-bold text-xs px-6 py-3 rounded-2xl shadow-sm active:scale-95 transition">
+Load More Items <i class="fa-solid fa-chevron-down ml-1"></i>
+</button>
+</div>
 </main>
 </div>
 
@@ -245,6 +252,24 @@ let selectedIds = new Set();
 let isUploading = false;
 let pendingTab = null;
 
+// Render limit per batch to keep mobile RAM fast & prevent Chrome "Aw, Snap!" crash
+const PAGE_SIZE = 24;
+let visibleLimit = PAGE_SIZE;
+
+// Helper to get lightweight thumbnail URLs for grid cards
+function getOptimizedThumbUrl(item) {
+if (!item || !item.url) return "";
+if (item.category === "image") {
+return item.url.replace("/upload/", "/upload/w_420,c_limit,q_auto,f_auto/");
+}
+if (item.category === "video") {
+return item.url
+.replace("/upload/", "/upload/so_0.5,w_420,c_limit,q_auto,f_jpg/")
+.replace(/\.(mp4|mov|avi|mkv|webm)$/i, ".jpg");
+}
+return item.url;
+}
+
 // Login Logic
 window.handleLogin = function() {
 const u = document.getElementById('username-input').value.trim();
@@ -331,6 +356,7 @@ showError("Cloudinary 'Resource list' is locked! Go to Cloudinary Settings > Sec
 
 fetchedItems.sort((a, b) => b.createdAt - a.createdAt);
 allItems = fetchedItems;
+visibleLimit = PAGE_SIZE;
 
 if(loadingEl) loadingEl.classList.add('hidden');
 renderItems();
@@ -560,6 +586,7 @@ return;
 }
 
 currentTab = tab;
+visibleLimit = PAGE_SIZE;
 
 // Show "Add Note" ONLY when in Text tab
 const addNoteBtn = document.getElementById('addNoteBtn');
@@ -581,7 +608,6 @@ moveSecretBtn.innerHTML = `<i class="fa-solid fa-key"></i> Move to Secret`;
 }
 }
 
-// Clear selection when switching tabs
 if (isSelectMode) {
 clearSelection();
 }
@@ -595,6 +621,11 @@ btn.classList.remove('bg-amber-500', 'text-white', 'font-bold', 'shadow-sm');
 btn.classList.add('text-emerald-50');
 }
 });
+renderItems();
+};
+
+window.loadMoreItems = function() {
+visibleLimit += PAGE_SIZE;
 renderItems();
 };
 
@@ -630,29 +661,43 @@ function renderItems() {
 const grid = document.getElementById('mediaGrid');
 const emptyState = document.getElementById('emptyState');
 const emptyText = document.getElementById('emptyText');
+const loadMoreWrap = document.getElementById('loadMoreWrap');
 const filtered = getFilteredItems();
 
 grid.innerHTML = "";
 
 if (filtered.length === 0) {
 emptyState.classList.remove('hidden');
+loadMoreWrap.classList.add('hidden');
 emptyText.textContent = `No items in ${currentTab} category yet.`;
 return;
 }
 emptyState.classList.add('hidden');
 
-filtered.forEach(item => {
+const itemsToRender = filtered.slice(0, visibleLimit);
+if (filtered.length > visibleLimit) {
+loadMoreWrap.classList.remove('hidden');
+} else {
+loadMoreWrap.classList.add('hidden');
+}
+
+const fragment = document.createDocumentFragment();
+
+itemsToRender.forEach(item => {
 const isSelected = selectedIds.has(item.id);
 const card = document.createElement('div');
 card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
 
+const thumbUrl = getOptimizedThumbUrl(item);
 let mediaPreview = "";
+
 if (item.category === "image") {
-mediaPreview = `<img src="${item.url}" alt="${escapeHtml(item.name)}" loading="lazy" class="w-full h-36 object-cover bg-slate-100" />`;
+mediaPreview = `<img src="${thumbUrl}" onerror="this.onerror=null;this.src='${item.url}'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-36 object-cover bg-slate-100" />`;
 } else if (item.category === "video") {
+// Lightweight static JPG thumbnail instead of heavy <video> decoder to prevent mobile RAM crash
 mediaPreview = `
-<div class="w-full h-36 bg-slate-900 flex items-center justify-center relative">
-<video src="${item.url}#t=0.5" preload="metadata" class="w-full h-full object-cover opacity-80"></video>
+<div class="w-full h-36 bg-slate-900 flex items-center justify-center relative overflow-hidden">
+<img src="${thumbUrl}" onerror="this.style.display='none'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-85" />
 <div class="absolute w-10 h-10 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow">
 <i class="fa-solid fa-play ml-0.5"></i>
 </div>
@@ -693,8 +738,10 @@ ${isSelectMode ? `
 </div>
 </div>
 `;
-grid.appendChild(card);
+fragment.appendChild(card);
 });
+
+grid.appendChild(fragment);
 }
 
 // Multi-Select Actions
@@ -738,7 +785,6 @@ bar.classList.remove('flex');
 }
 }
 
-// Batch Download Selected Files
 window.downloadSelected = async function() {
 if (selectedIds.size === 0) {
 alert("Please select at least one file to download.");
@@ -753,7 +799,6 @@ await new Promise(resolve => setTimeout(resolve, 400));
 clearSelection();
 };
 
-// Move Selected Items to Secret Vault (or Remove from Secret if inside Secret tab)
 window.moveSelectedToSecret = function() {
 if (selectedIds.size === 0) {
 alert("Please select at least one file.");
@@ -787,7 +832,7 @@ clearSelection();
 renderItems();
 };
 
-// Preview & Info
+// Preview & Info (Properly releases media memory when closed)
 window.handleCardClick = async function(id) {
 if (isSelectMode) {
 toggleItemSelect(id);
@@ -808,13 +853,13 @@ modal.classList.add('flex');
 if (item.category === "image") {
 body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
 } else if (item.category === "video") {
-body.innerHTML = `<video src="${item.url}" controls autoplay class="max-h-full max-w-full rounded-xl"></video>`;
+body.innerHTML = `<video id="activeMediaPlayer" src="${item.url}" controls autoplay playsinline class="max-h-full max-w-full rounded-xl"></video>`;
 } else if (item.category === "audio") {
 body.innerHTML = `
 <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
 <i class="fa-solid fa-music text-5xl text-[#10b981] mb-4"></i>
 <p class="font-bold mb-4">${escapeHtml(item.name)}</p>
-<audio src="${item.url}" controls autoplay class="w-full"></audio>
+<audio id="activeMediaPlayer" src="${item.url}" controls autoplay class="w-full"></audio>
 </div>`;
 } else {
 body.innerHTML = `<div class="text-center text-slate-300"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><p class="text-xs">Loading cloud text...</p></div>`;
@@ -833,6 +878,12 @@ body.innerHTML = `<div class="text-center"><p class="mb-3">Preview unavailable.<
 };
 
 window.closePreview = function() {
+const player = document.getElementById('activeMediaPlayer');
+if (player) {
+player.pause();
+player.removeAttribute('src');
+player.load();
+}
 const modal = document.getElementById('previewModal');
 document.getElementById('previewBody').innerHTML = "";
 modal.classList.add('hidden');
@@ -892,4 +943,4 @@ return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '
 }
 </script>
 </body>
-</html>
+      </html>
