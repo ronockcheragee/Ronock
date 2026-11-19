@@ -281,12 +281,6 @@ return item.url.replace("/upload/", "/upload/f_jpg,q_100/");
 return item.url;
 }
 
-function getVideoSourcesForPlayer(item) {
-const mp4Url = item.url.replace(/\.(mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".mp4");
-const autoVideoUrl = item.url.replace("/upload/", "/upload/f_auto/");
-return { mp4Url, autoVideoUrl, originalUrl: item.url };
-}
-
 // Login Logic
 window.handleLogin = function() {
 const u = document.getElementById('username-input').value.trim();
@@ -493,8 +487,8 @@ alert(`📥 Import Summary:\n` +
 };
 
 async function uploadSmartToCloudinary(fileBlob, originalName, category, onProgress) {
-const CHUNK_THRESHOLD = 15 * 1024 * 1024; // 15 MB
-const CHUNK_SIZE = 6 * 1024 * 1024; // 6 MB chunks for reliable mobile upload
+const CHUNK_THRESHOLD = 15 * 1024 * 1024;
+const CHUNK_SIZE = 6 * 1024 * 1024;
 
 if (fileBlob.size <= CHUNK_THRESHOLD) {
 return uploadSingleChunk(fileBlob, originalName, category, null, null, onProgress);
@@ -540,7 +534,7 @@ formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 formData.append("tags", VAULT_TAG);
 formData.append("context", `caption=${originalName}|vault_cat=${category}`);
 
-xhr.timeout = 300000; // 5 minutes for slow mobile connections
+xhr.timeout = 300000;
 
 xhr.upload.addEventListener("progress", (e) => {
 if (e.lengthComputable && onProgress) {
@@ -901,7 +895,7 @@ clearSelection();
 renderItems(true);
 };
 
-// Fullscreen Preview
+// Fresh & Clean Fullscreen Preview
 window.handleCardClick = async function(id) {
 if (isSelectMode) {
 toggleItemSelect(id);
@@ -923,27 +917,16 @@ if (item.category === "image") {
 const previewUrl = getPreviewImageUrl(item);
 body.innerHTML = `<img src="${previewUrl}" onerror="this.onerror=null;this.src='${item.url}'" class="max-h-full max-w-full rounded-xl object-contain" />`;
 } else if (item.category === "video") {
-const srcs = getVideoSourcesForPlayer(item);
 const posterUrl = getFastCardUrl(item);
+const mp4Url = item.url.replace(/\.(mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".mp4");
 body.innerHTML = `
-<video id="activeMediaPlayer" poster="${posterUrl}" controls autoplay playsinline preload="metadata" class="max-h-[78vh] max-w-full rounded-xl bg-black">
-<source src="${srcs.mp4Url}" type="video/mp4">
-<source src="${srcs.autoVideoUrl}">
-<source src="${srcs.originalUrl}">
+<video id="activeMediaPlayer" poster="${posterUrl}" controls autoplay playsinline preload="auto" class="max-h-[82vh] max-w-full rounded-xl bg-black">
+<source src="${item.url}">
+<source src="${mp4Url}" type="video/mp4">
 </video>
-<div id="videoCodecFallback" class="hidden mt-3 text-center">
-<p class="text-xs text-slate-300 mb-2">This browser cannot render this video codec directly.</p>
-<button onclick="downloadItem('${item.id}')" class="bg-[#10b981] text-white text-xs font-bold px-4 py-2 rounded-xl">
-<i class="fa-solid fa-download mr-1"></i> Download Original Video
-</button>
-</div>
 `;
 const vidEl = document.getElementById('activeMediaPlayer');
-vidEl.addEventListener('loadeddata', () => {
-if (vidEl.videoWidth === 0) {
-document.getElementById('videoCodecFallback').classList.remove('hidden');
-}
-});
+vidEl.play().catch(() => {});
 } else if (item.category === "audio") {
 body.innerHTML = `
 <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
@@ -1034,4 +1017,4 @@ return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '
 }
 </script>
 </body>
-</html>
+      </html>
