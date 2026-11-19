@@ -6,7 +6,6 @@
 <title>RONOCK - Permanent Cloud Vault</title>
 <link rel="icon" type="image/png" href="https://i.ibb.co/JRrxsJps/image.png">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -15,15 +14,15 @@ font-family: 'Plus Jakarta Sans', sans-serif;
 background-color: #f4f7f6;
 -webkit-tap-highlight-color: transparent;
 user-select: none;
-overscroll-behavior-y: contain;
 }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .one-ui-card {
-border-radius: 22px;
+border-radius: 26px;
 background: #ffffff;
-border: 1px solid rgba(0,0,0,0.05);
-transform: translateZ(0);
+box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+content-visibility: auto;
+contain-intrinsic-size: 200px;
 }
 @keyframes pulse-border {
 0%, 100% { border-color: #10b981; }
@@ -49,12 +48,13 @@ animation: pulse-border 1.5s infinite;
 </div>
 </div>
 
-<!-- Main App Content -->
+<!-- Main App Content (Hidden until login) -->
 <div id="app-content" class="hidden">
-<header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px]">
+<header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px] transition-all">
 <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
 <div class="flex items-center justify-between gap-2 mb-3">
 <div class="flex items-center gap-2 min-w-0">
+<!-- Profile / Logo Image & Title -->
 <div class="flex items-center gap-2 shrink-0">
 <img src="https://ibb.co.com/YFdDtyBT" onerror="this.src='https://i.ibb.co/JRrxsJps/image.png'" alt="Logo" class="w-9 h-9 rounded-full object-cover bg-white p-0.5 shadow-sm shrink-0">
 <h1 class="text-lg sm:text-xl font-extrabold tracking-wide whitespace-nowrap">RONOCK</h1>
@@ -62,7 +62,7 @@ animation: pulse-border 1.5s infinite;
 <span id="sync-status" class="bg-emerald-800/60 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ml-1">Cloud Sync Active ☁️</span>
 </div>
 
-<div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge shrink-0">
+<div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge shrink-0">
 <i class="fa-solid fa-hourglass-half fa-spin text-amber-300"></i>
 <span id="uploadStatusText">Uploading [0/0]: 0%</span>
 </div>
@@ -155,12 +155,12 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
-<div id="scrollSentinel" class="h-10 w-full"></div>
+<div id="scrollSentinel" class="h-6 w-full"></div>
 </main>
 </div>
 
 <!-- Secret PIN Modal -->
-<div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+<div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
 <div class="bg-white p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
 <h3 class="text-lg font-extrabold text-slate-800 mb-1">Enter Secret PIN 🔑</h3>
 <p class="text-xs text-slate-400 mb-4">Enter 4-digit PIN to access protected files</p>
@@ -173,7 +173,7 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <!-- Add Text Note Modal -->
-<div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+<div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-xs p-4">
 <div class="one-ui-card w-full max-w-md p-6">
 <div class="flex items-center justify-between mb-4">
 <h3 class="text-lg font-extrabold text-slate-800">Save Permanent Text</h3>
@@ -191,7 +191,7 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <!-- Info Details Modal -->
-<div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 p-4">
+<div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-4">
 <div class="one-ui-card w-full max-w-md p-6">
 <div class="flex items-center justify-between mb-4">
 <h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
@@ -227,7 +227,7 @@ animation: pulse-border 1.5s infinite;
 </button>
 </div>
 </div>
-<div id="previewBody" class="flex-1 flex flex-col items-center justify-center p-4 overflow-auto"></div>
+<div id="previewBody" class="flex-1 flex items-center justify-center p-4 overflow-auto"></div>
 </div>
 
 <script>
@@ -247,33 +247,23 @@ let isSelectMode = false;
 let selectedIds = new Set();
 let isUploading = false;
 let pendingTab = null;
-let activeHls = null;
 
-// Fast & ultra-smooth progressive batching (60fps scroll on mobile)
-const BATCH_SIZE = 20;
+// Seamless background progressive rendering (No button needed, all items load smoothly as you scroll)
+const BATCH_SIZE = 30;
 let renderedCount = 0;
 
-// Ultra-lightweight, sharp card thumbnails for zero-lag 60fps scrolling
-function getFastCardUrl(item) {
+// Sharp HD thumbnail for grid cards (Full 100% original resolution is used in Preview & Download)
+function getSharpCardUrl(item) {
 if (!item || !item.url) return "";
 if (item.category === "image") {
-return item.url.replace("/upload/", "/upload/w_400,c_limit,q_auto:eco,f_auto/");
+return item.url.replace("/upload/", "/upload/w_900,c_limit,q_100/");
 }
 if (item.category === "video") {
 return item.url
-.replace("/upload/", "/upload/so_0.5,w_400,c_limit,q_auto:eco,f_jpg/")
-.replace(/\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/i, ".jpg");
+.replace("/upload/", "/upload/so_0.5,w_800,c_limit,q_95,f_jpg/")
+.replace(/\.(mp4|mov|avi|mkv|webm)$/i, ".jpg");
 }
 return item.url;
-}
-
-// Build Cloudinary HLS (.m3u8) & standard MP4 streaming URLs supported on Cloudinary Free Plan
-function getVideoStreamUrls(item) {
-const hlsUrl = item.url
-.replace("/upload/", "/upload/sp_auto/")
-.replace(/\.(mp4|mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".m3u8");
-const mp4Url = item.url.replace(/\.(mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".mp4");
-return { hlsUrl, mp4Url, originalUrl: item.url };
 }
 
 // Login Logic
@@ -334,7 +324,7 @@ const cleanName = (item.context && item.context.custom && item.context.custom.ca
 : (item.public_id.split('/').pop() + ext);
 
 const fileUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/upload/v${item.version}/${item.public_id}${ext}`;
-const category = classifyResource(rType, item.format, item.context, cleanName, item.width);
+const category = classifyResource(rType, item.format, item.context);
 
 fetchedItems.push({
 id: item.public_id,
@@ -367,20 +357,14 @@ if(loadingEl) loadingEl.classList.add('hidden');
 renderItems(true);
 };
 
-function classifyResource(rType, format, context, fileName = "", width = null) {
+function classifyResource(rType, format, context) {
 if (context && context.custom && context.custom.vault_cat) {
 return context.custom.vault_cat;
 }
 const fmt = (format || "").toLowerCase();
-const lowerName = (fileName || "").toLowerCase();
 if (rType === 'image') return 'image';
 if (rType === 'video') {
-if (/\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/.test(lowerName) || ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', '3gp'].includes(fmt) || (width && width > 0)) {
-return 'video';
-}
-if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt) || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(lowerName)) {
-return 'audio';
-}
+if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt)) return 'audio';
 return 'video';
 }
 return 'text';
@@ -526,8 +510,8 @@ function detectFileCategory(mimeType, fileName) {
 const m = (mimeType || "").toLowerCase();
 const n = (fileName || "").toLowerCase();
 if (m.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic)$/.test(n)) return "image";
-if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/.test(n)) return "video";
 if (m.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(n)) return "audio";
+if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/.test(n)) return "video";
 return "text";
 }
 
@@ -663,9 +647,9 @@ return allItems.filter(item => item.category === currentTab && !secretIds.has(it
 function buildCardElement(item) {
 const isSelected = selectedIds.has(item.id);
 const card = document.createElement('div');
-card.className = `one-ui-card overflow-hidden relative border-2 ${isSelected ? 'border-[#10b981]' : 'border-transparent'}`;
+card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
 
-const cardImgUrl = getFastCardUrl(item);
+const cardImgUrl = getSharpCardUrl(item);
 let mediaPreview = "";
 
 if (item.category === "image") {
@@ -746,17 +730,12 @@ grid.appendChild(fragment);
 renderedCount = targetCount;
 }
 
-// Smooth hardware-accelerated IntersectionObserver for silky-smooth scrolling
-const sentinelObserver = new IntersectionObserver((entries) => {
-if (entries[0].isIntersecting) {
+// Seamless automatic infinite scroll (No Load More button, everything loads smoothly as you scroll)
+window.addEventListener('scroll', () => {
+if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
 renderItems(false);
 }
-}, { rootMargin: '600px' });
-
-window.addEventListener('DOMContentLoaded', () => {
-const sentinel = document.getElementById('scrollSentinel');
-if (sentinel) sentinelObserver.observe(sentinel);
-});
+}, { passive: true });
 
 // Multi-Select Actions
 window.toggleSelectMode = function() {
@@ -846,7 +825,7 @@ clearSelection();
 renderItems(true);
 };
 
-// Fullscreen Preview (Uses Cloudinary sp_auto HLS streaming so iPhone HEVC .MOV videos play H.264 video in Chrome)
+// Fullscreen Preview (Loads 100% Untouched Original Resolution)
 window.handleCardClick = async function(id) {
 if (isSelectMode) {
 toggleItemSelect(id);
@@ -867,39 +846,7 @@ modal.classList.add('flex');
 if (item.category === "image") {
 body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
 } else if (item.category === "video") {
-const streams = getVideoStreamUrls(item);
-const posterUrl = getFastCardUrl(item);
-body.innerHTML = `
-<video id="activeMediaPlayer" poster="${posterUrl}" controls autoplay playsinline class="max-h-[80vh] max-w-full rounded-xl bg-black"></video>
-`;
-const video = document.getElementById('activeMediaPlayer');
-
-if (window.Hls && Hls.isSupported()) {
-if (activeHls) {
-activeHls.destroy();
-activeHls = null;
-}
-const hls = new Hls({ enableWorker: true });
-activeHls = hls;
-hls.loadSource(streams.hlsUrl);
-hls.attachMedia(video);
-hls.on(Hls.Events.MANIFEST_PARSED, () => {
-video.play().catch(() => {});
-});
-hls.on(Hls.Events.ERROR, (event, data) => {
-if (data.fatal) {
-hls.destroy();
-activeHls = null;
-video.src = streams.mp4Url;
-video.onerror = () => { video.src = streams.originalUrl; };
-video.play().catch(() => {});
-}
-});
-} else {
-video.src = streams.mp4Url;
-video.onerror = () => { video.src = streams.originalUrl; };
-video.play().catch(() => {});
-}
+body.innerHTML = `<video id="activeMediaPlayer" src="${item.url}" controls autoplay playsinline class="max-h-full max-w-full rounded-xl"></video>`;
 } else if (item.category === "audio") {
 body.innerHTML = `
 <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
@@ -924,10 +871,6 @@ body.innerHTML = `<div class="text-center"><p class="mb-3">Preview unavailable.<
 };
 
 window.closePreview = function() {
-if (activeHls) {
-activeHls.destroy();
-activeHls = null;
-}
 const player = document.getElementById('activeMediaPlayer');
 if (player) {
 player.pause();
@@ -993,4 +936,4 @@ return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '
 }
 </script>
 </body>
-</html>
+      </html>
