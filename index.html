@@ -14,15 +14,15 @@ font-family: 'Plus Jakarta Sans', sans-serif;
 background-color: #f4f7f6;
 -webkit-tap-highlight-color: transparent;
 user-select: none;
+overscroll-behavior-y: contain;
 }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .one-ui-card {
-border-radius: 26px;
+border-radius: 22px;
 background: #ffffff;
-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-content-visibility: auto;
-contain-intrinsic-size: 200px;
+border: 1px solid rgba(0,0,0,0.05);
+transform: translateZ(0);
 }
 @keyframes pulse-border {
 0%, 100% { border-color: #10b981; }
@@ -48,13 +48,12 @@ animation: pulse-border 1.5s infinite;
 </div>
 </div>
 
-<!-- Main App Content (Hidden until login) -->
+<!-- Main App Content -->
 <div id="app-content" class="hidden">
-<header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px] transition-all">
+<header class="sticky top-0 z-40 bg-[#10b981] text-white shadow-md rounded-b-[28px]">
 <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
 <div class="flex items-center justify-between gap-2 mb-3">
 <div class="flex items-center gap-2 min-w-0">
-<!-- Profile / Logo Image & Title -->
 <div class="flex items-center gap-2 shrink-0">
 <img src="https://ibb.co.com/YFdDtyBT" onerror="this.src='https://i.ibb.co/JRrxsJps/image.png'" alt="Logo" class="w-9 h-9 rounded-full object-cover bg-white p-0.5 shadow-sm shrink-0">
 <h1 class="text-lg sm:text-xl font-extrabold tracking-wide whitespace-nowrap">RONOCK</h1>
@@ -62,7 +61,7 @@ animation: pulse-border 1.5s infinite;
 <span id="sync-status" class="bg-emerald-800/60 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shrink-0 ml-1">Cloud Sync Active ☁️</span>
 </div>
 
-<div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge shrink-0">
+<div id="uploadStatusPill" class="hidden items-center gap-2 bg-emerald-800/80 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-400/50 uploading-badge shrink-0">
 <i class="fa-solid fa-hourglass-half fa-spin text-amber-300"></i>
 <span id="uploadStatusText">Uploading [0/0]: 0%</span>
 </div>
@@ -155,12 +154,12 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3.5"></div>
-<div id="scrollSentinel" class="h-6 w-full"></div>
+<div id="scrollSentinel" class="h-10 w-full"></div>
 </main>
 </div>
 
 <!-- Secret PIN Modal -->
-<div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+<div id="pinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
 <div class="bg-white p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
 <h3 class="text-lg font-extrabold text-slate-800 mb-1">Enter Secret PIN 🔑</h3>
 <p class="text-xs text-slate-400 mb-4">Enter 4-digit PIN to access protected files</p>
@@ -173,7 +172,7 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <!-- Add Text Note Modal -->
-<div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+<div id="textModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
 <div class="one-ui-card w-full max-w-md p-6">
 <div class="flex items-center justify-between mb-4">
 <h3 class="text-lg font-extrabold text-slate-800">Save Permanent Text</h3>
@@ -191,7 +190,7 @@ animation: pulse-border 1.5s infinite;
 </div>
 
 <!-- Info Details Modal -->
-<div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+<div id="infoModal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/50 p-4">
 <div class="one-ui-card w-full max-w-md p-6">
 <div class="flex items-center justify-between mb-4">
 <h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
@@ -227,7 +226,7 @@ animation: pulse-border 1.5s infinite;
 </button>
 </div>
 </div>
-<div id="previewBody" class="flex-1 flex items-center justify-center p-4 overflow-auto"></div>
+<div id="previewBody" class="flex-1 flex flex-col items-center justify-center p-4 overflow-auto"></div>
 </div>
 
 <script>
@@ -248,22 +247,44 @@ let selectedIds = new Set();
 let isUploading = false;
 let pendingTab = null;
 
-// Seamless background progressive rendering (No button needed, all items load smoothly as you scroll)
-const BATCH_SIZE = 30;
+// Smooth progressive batching
+const BATCH_SIZE = 20;
 let renderedCount = 0;
 
-// Sharp HD thumbnail for grid cards (Full 100% original resolution is used in Preview & Download)
-function getSharpCardUrl(item) {
+function isHeifFile(item) {
+const name = (item && item.name || "").toLowerCase();
+const fmt = (item && item.format || "").toLowerCase();
+return /\.(heif|heic)$/.test(name) || fmt === "heif" || fmt === "heic";
+}
+
+function getFastCardUrl(item) {
 if (!item || !item.url) return "";
 if (item.category === "image") {
-return item.url.replace("/upload/", "/upload/w_900,c_limit,q_100/");
+if (isHeifFile(item)) {
+return item.url.replace("/upload/", "/upload/w_450,c_limit,q_auto:good,f_jpg/");
+}
+return item.url.replace("/upload/", "/upload/w_450,c_limit,q_auto:good,f_auto/");
 }
 if (item.category === "video") {
 return item.url
-.replace("/upload/", "/upload/so_0.5,w_800,c_limit,q_95,f_jpg/")
-.replace(/\.(mp4|mov|avi|mkv|webm)$/i, ".jpg");
+.replace("/upload/", "/upload/so_0.5,w_450,c_limit,q_auto:good,f_jpg/")
+.replace(/\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/i, ".jpg");
 }
 return item.url;
+}
+
+function getPreviewImageUrl(item) {
+if (!item || !item.url) return "";
+if (isHeifFile(item)) {
+return item.url.replace("/upload/", "/upload/f_jpg,q_100/");
+}
+return item.url;
+}
+
+function getVideoSourcesForPlayer(item) {
+const mp4Url = item.url.replace(/\.(mov|avi|mkv|webm|m4v|3gp|hevc)$/i, ".mp4");
+const autoVideoUrl = item.url.replace("/upload/", "/upload/f_auto/");
+return { mp4Url, autoVideoUrl, originalUrl: item.url };
 }
 
 // Login Logic
@@ -324,7 +345,7 @@ const cleanName = (item.context && item.context.custom && item.context.custom.ca
 : (item.public_id.split('/').pop() + ext);
 
 const fileUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/${rType}/upload/v${item.version}/${item.public_id}${ext}`;
-const category = classifyResource(rType, item.format, item.context);
+const category = classifyResource(rType, item.format, item.context, cleanName, item.width);
 
 fetchedItems.push({
 id: item.public_id,
@@ -357,20 +378,26 @@ if(loadingEl) loadingEl.classList.add('hidden');
 renderItems(true);
 };
 
-function classifyResource(rType, format, context) {
+function classifyResource(rType, format, context, fileName = "", width = null) {
 if (context && context.custom && context.custom.vault_cat) {
 return context.custom.vault_cat;
 }
 const fmt = (format || "").toLowerCase();
+const lowerName = (fileName || "").toLowerCase();
 if (rType === 'image') return 'image';
 if (rType === 'video') {
-if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt)) return 'audio';
+if (/\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/.test(lowerName) || ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v', '3gp'].includes(fmt) || (width && width > 0)) {
+return 'video';
+}
+if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'opus'].includes(fmt) || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(lowerName)) {
+return 'audio';
+}
 return 'video';
 }
 return 'text';
 }
 
-// Upload Engine with Smart Overwrite & Summary Notification
+// Upload Engine with Chunked Support for Large / 2-Min Videos & Smart Overwrite
 window.handleFileSelect = async function(event) {
 const files = Array.from(event.target.files);
 if (!files.length) return;
@@ -389,6 +416,7 @@ const total = files.length;
 let successCount = 0;
 let overwriteCount = 0;
 let failCount = 0;
+let lastErrorMsg = "";
 
 for (let i = 0; i < total; i++) {
 const file = files[i];
@@ -401,7 +429,7 @@ const cat = detectFileCategory(file.type, file.name);
 const existingIndex = allItems.findIndex(item => item.name.toLowerCase() === file.name.toLowerCase());
 const isOverwriting = existingIndex !== -1;
 
-const cloudData = await uploadSingleToCloudinary(file, file.name, cat, (percent) => {
+const cloudData = await uploadSmartToCloudinary(file, file.name, cat, (percent) => {
 if (percent < 100) {
 statusText.textContent = `Uploading [${currentNum}/${total}]: ${percent}%`;
 } else {
@@ -440,6 +468,7 @@ renderItems(true);
 
 } catch (err) {
 console.error(`Failed ${file.name}:`, err);
+lastErrorMsg = err.message || "Upload failed";
 failCount++;
 }
 }
@@ -451,6 +480,10 @@ statusPill.classList.add('hidden');
 statusPill.classList.remove('flex');
 }, 1200);
 
+if (failCount > 0 && lastErrorMsg) {
+showError(`Upload issue: ${lastErrorMsg}`);
+}
+
 alert(`📥 Import Summary:\n` +
       `---------------------------\n` +
       `📂 Total Selected: ${total}\n` +
@@ -459,18 +492,55 @@ alert(`📥 Import Summary:\n` +
       `❌ Failed: ${failCount}`);
 };
 
-function uploadSingleToCloudinary(fileBlob, originalName, category, onProgress) {
+async function uploadSmartToCloudinary(fileBlob, originalName, category, onProgress) {
+const CHUNK_THRESHOLD = 15 * 1024 * 1024; // 15 MB
+const CHUNK_SIZE = 6 * 1024 * 1024; // 6 MB chunks for reliable mobile upload
+
+if (fileBlob.size <= CHUNK_THRESHOLD) {
+return uploadSingleChunk(fileBlob, originalName, category, null, null, onProgress);
+}
+
+const uniqueUploadId = "ronock_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+const totalSize = fileBlob.size;
+let start = 0;
+let finalResponse = null;
+
+while (start < totalSize) {
+const end = Math.min(start + CHUNK_SIZE, totalSize);
+const slice = fileBlob.slice(start, end);
+const contentRange = `bytes ${start}-${end - 1}/${totalSize}`;
+
+finalResponse = await uploadSingleChunk(
+slice,
+originalName,
+category,
+uniqueUploadId,
+contentRange,
+(chunkPct) => {
+const overallPct = Math.min(99, Math.round(((start + (chunkPct / 100) * (end - start)) / totalSize) * 100));
+if (onProgress) onProgress(overallPct);
+}
+);
+
+start = end;
+}
+
+if (onProgress) onProgress(100);
+return finalResponse;
+}
+
+function uploadSingleChunk(blobPart, originalName, category, uniqueUploadId, contentRange, onProgress) {
 return new Promise((resolve, reject) => {
 const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
 const xhr = new XMLHttpRequest();
 const formData = new FormData();
 
-formData.append("file", fileBlob, originalName);
+formData.append("file", blobPart, originalName);
 formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 formData.append("tags", VAULT_TAG);
 formData.append("context", `caption=${originalName}|vault_cat=${category}`);
 
-xhr.timeout = 90000;
+xhr.timeout = 300000; // 5 minutes for slow mobile connections
 
 xhr.upload.addEventListener("progress", (e) => {
 if (e.lengthComputable && onProgress) {
@@ -498,10 +568,12 @@ reject(new Error(errMsg));
 }
 };
 
-xhr.ontimeout = () => reject(new Error("Network timeout"));
-xhr.onerror = () => reject(new Error("Connection error"));
+xhr.ontimeout = () => reject(new Error("Upload timed out — check network or file size"));
+xhr.onerror = () => reject(new Error("Network connection interrupted during upload"));
 
 xhr.open("POST", url, true);
+if (uniqueUploadId) xhr.setRequestHeader("X-Unique-Upload-Id", uniqueUploadId);
+if (contentRange) xhr.setRequestHeader("Content-Range", contentRange);
 xhr.send(formData);
 });
 }
@@ -509,9 +581,9 @@ xhr.send(formData);
 function detectFileCategory(mimeType, fileName) {
 const m = (mimeType || "").toLowerCase();
 const n = (fileName || "").toLowerCase();
-if (m.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic)$/.test(n)) return "image";
+if (m.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|heic|heif)$/.test(n)) return "image";
+if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/.test(n)) return "video";
 if (m.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|opus)$/.test(n)) return "audio";
-if (m.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/.test(n)) return "video";
 return "text";
 }
 
@@ -536,7 +608,7 @@ btn.textContent = "Saving to Cloud...";
 try {
 const fileName = title.endsWith(".txt") ? title : `${title}.txt`;
 const textBlob = new Blob([content], { type: "text/plain" });
-const cloudData = await uploadSingleToCloudinary(textBlob, fileName, "text", null);
+const cloudData = await uploadSmartToCloudinary(textBlob, fileName, "text", null);
 
 const newItem = {
 id: cloudData.public_id,
@@ -647,13 +719,13 @@ return allItems.filter(item => item.category === currentTab && !secretIds.has(it
 function buildCardElement(item) {
 const isSelected = selectedIds.has(item.id);
 const card = document.createElement('div');
-card.className = `one-ui-card overflow-hidden relative group transition-all border-2 ${isSelected ? 'border-[#10b981] scale-[0.98]' : 'border-transparent'}`;
+card.className = `one-ui-card overflow-hidden relative border-2 ${isSelected ? 'border-[#10b981]' : 'border-transparent'}`;
 
-const cardImgUrl = getSharpCardUrl(item);
+const cardImgUrl = getFastCardUrl(item);
 let mediaPreview = "";
 
 if (item.category === "image") {
-mediaPreview = `<img src="${cardImgUrl}" onerror="this.onerror=null;this.src='${item.url}'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-36 object-cover bg-slate-100" />`;
+mediaPreview = `<img src="${cardImgUrl}" onerror="this.onerror=null;this.src='${getPreviewImageUrl(item)}'" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" class="w-full h-36 object-cover bg-slate-100" />`;
 } else if (item.category === "video") {
 mediaPreview = `
 <div class="w-full h-36 bg-slate-900 flex items-center justify-center relative overflow-hidden">
@@ -730,12 +802,16 @@ grid.appendChild(fragment);
 renderedCount = targetCount;
 }
 
-// Seamless automatic infinite scroll (No Load More button, everything loads smoothly as you scroll)
-window.addEventListener('scroll', () => {
-if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
+const sentinelObserver = new IntersectionObserver((entries) => {
+if (entries[0].isIntersecting) {
 renderItems(false);
 }
-}, { passive: true });
+}, { rootMargin: '600px' });
+
+window.addEventListener('DOMContentLoaded', () => {
+const sentinel = document.getElementById('scrollSentinel');
+if (sentinel) sentinelObserver.observe(sentinel);
+});
 
 // Multi-Select Actions
 window.toggleSelectMode = function() {
@@ -825,7 +901,7 @@ clearSelection();
 renderItems(true);
 };
 
-// Fullscreen Preview (Loads 100% Untouched Original Resolution)
+// Fullscreen Preview
 window.handleCardClick = async function(id) {
 if (isSelectMode) {
 toggleItemSelect(id);
@@ -844,9 +920,30 @@ modal.classList.remove('hidden');
 modal.classList.add('flex');
 
 if (item.category === "image") {
-body.innerHTML = `<img src="${item.url}" class="max-h-full max-w-full rounded-xl object-contain" />`;
+const previewUrl = getPreviewImageUrl(item);
+body.innerHTML = `<img src="${previewUrl}" onerror="this.onerror=null;this.src='${item.url}'" class="max-h-full max-w-full rounded-xl object-contain" />`;
 } else if (item.category === "video") {
-body.innerHTML = `<video id="activeMediaPlayer" src="${item.url}" controls autoplay playsinline class="max-h-full max-w-full rounded-xl"></video>`;
+const srcs = getVideoSourcesForPlayer(item);
+const posterUrl = getFastCardUrl(item);
+body.innerHTML = `
+<video id="activeMediaPlayer" poster="${posterUrl}" controls autoplay playsinline preload="metadata" class="max-h-[78vh] max-w-full rounded-xl bg-black">
+<source src="${srcs.mp4Url}" type="video/mp4">
+<source src="${srcs.autoVideoUrl}">
+<source src="${srcs.originalUrl}">
+</video>
+<div id="videoCodecFallback" class="hidden mt-3 text-center">
+<p class="text-xs text-slate-300 mb-2">This browser cannot render this video codec directly.</p>
+<button onclick="downloadItem('${item.id}')" class="bg-[#10b981] text-white text-xs font-bold px-4 py-2 rounded-xl">
+<i class="fa-solid fa-download mr-1"></i> Download Original Video
+</button>
+</div>
+`;
+const vidEl = document.getElementById('activeMediaPlayer');
+vidEl.addEventListener('loadeddata', () => {
+if (vidEl.videoWidth === 0) {
+document.getElementById('videoCodecFallback').classList.remove('hidden');
+}
+});
 } else if (item.category === "audio") {
 body.innerHTML = `
 <div class="bg-slate-900 p-8 rounded-3xl text-center w-full max-w-sm">
@@ -875,6 +972,7 @@ const player = document.getElementById('activeMediaPlayer');
 if (player) {
 player.pause();
 player.removeAttribute('src');
+player.innerHTML = "";
 player.load();
 }
 const modal = document.getElementById('previewModal');
@@ -936,4 +1034,4 @@ return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '
 }
 </script>
 </body>
-      </html>
+</html>
